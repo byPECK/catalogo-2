@@ -1,0 +1,193 @@
+
+var default_key = 'jkhistory';
+var user_key = default_key;
+
+function getAnonHistory(un = false) {
+
+if(default_key !== un && cacheLocal.getItem(default_key) !== null && cacheLocal.getItem(un) == null) {
+cacheLocal.setItem(un, cacheLocal.getItem(default_key));
+console.log('Recupera historial');
+}
+
+}
+function setUserKey(u = false) {
+user_key += u == false ? '' : "_"+u;
+//recupera historial sin cuenta
+getAnonHistory(user_key);
+}
+
+function fecha_actual() {
+    const now = new Date();
+    const locale = 'es-ES';
+
+    const options = {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23', // 'h23' para el formato 24 horas (00-23)
+    };
+
+    const formattedDate = new Intl.DateTimeFormat(locale, options).format(now);
+    return formattedDate;
+}
+
+// Funcion para agregar o actualizar un elemento en el historial
+function addToHistory(episode, url, image, anime, time) {
+    // Obtener el historial actual de cacheLocal
+
+    const historyStr = cacheLocal.getItem(user_key);
+    let history = [];
+
+    // Si existe historial, parsearlo
+    if (historyStr) {
+        history = jparse(historyStr);
+    }
+
+    // Verificar si la URL ya existe en el historial
+    const existingIndex = history.findIndex(item => item.url === url); // Cambiado a comparar por URL
+
+    if (existingIndex !== -1) {
+        // Si existe, actualizar SOLO el campo 'time' y mantener los demás
+        history[existingIndex].time = time;
+    } else {
+
+        // Verificar si la URL ya existe en el historial
+        const existingAnime = history.findIndex(item => item.anime === anime);
+
+        // Si existe, eliminarlo del array
+        if (existingAnime !== -1) {
+            history.splice(existingAnime, 1);
+        }
+
+
+        // Si no existe, crear el nuevo elemento con todos los campos
+        const newItem = {
+            episode: episode,
+            url: url,
+            fecha: fecha_actual(),
+            imagen: image,
+            anime: anime,
+            time: time // Nuevo campo
+        };
+
+        // Agregar al inicio del array
+        history.unshift(newItem);
+
+        // Limitar el historial a 50 elementos
+        if (history.length > 50) {
+            history = history.slice(0, 50);
+        }
+    }
+
+    // Guardar en cacheLocal
+    cacheLocal.setItem(user_key, JSON.stringify(history));
+}
+
+function convertTo24HourFormat(dateString) {
+    if (!dateString.includes('a.m.') && !dateString.includes('p.m.')) {
+        return dateString.trim();
+    }
+
+    const parts = dateString.split(', ');
+    const datePart = parts[0];
+    const timeWithPeriod = parts[1];
+
+    const [timePart, period] = timeWithPeriod.split(' ');
+    const [hrStr, minStr, secStr] = timePart.split(':');
+
+    let hr = parseInt(hrStr, 10);
+    if (period === 'p.m.') {
+        if (hr !== 12) {
+            hr += 12;
+        }
+    } else if (period === 'a.m.') {
+        if (hr === 12) {
+            hr = 0;
+        }
+    }
+
+    const newHr = String(hr).padStart(2, '0');
+    const newMin = minStr.padStart(2, '0');
+    const newSec = secStr.padStart(2, '0');
+
+    const newTimePart = `${newHr}:${newMin}:${newSec}`;
+
+    return `${datePart}, ${newTimePart}`;
+}
+
+function dateStringToTimestamp(dateString) {
+    // 1. Dividir la fecha y hora
+    const [datePart, timePart] = dateString.split(', ');
+
+    const [day, month, year] = datePart.split('/').map(num => parseInt(num, 10));
+
+    const [hours, minutes, seconds] = timePart.split(':').map(num => parseInt(num, 10));
+
+    const date = new Date(year, month - 1, day, hours, minutes, seconds);
+
+    if (isNaN(date.getTime())) {
+        console.error("Error al parsear fecha:", dateString);
+        return 0;
+    }
+
+    return date.getTime();
+}
+
+// Funcion para obtener el historial completo
+function getHistory(sortBy = 'date', order = 'asc', search = '') {
+    const historyStr = cacheLocal.getItem(user_key);
+    let history = historyStr ? jparse(historyStr) : [];
+
+    history.forEach(function (k, i) {
+       history[i]['fecha'] = convertTo24HourFormat(history[i]['fecha']);
+    });
+
+    console.log(history);
+    // Filtrar por búsqueda (si existe)
+    if (search) {
+        const searchTerm = search.toLowerCase();
+        history = history.filter(item =>
+        item.anime.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    // Ordenar según el criterio
+    switch (sortBy) {
+        case 'nombre':
+            history.sort((a, b) => a.anime.localeCompare(b.anime));
+            break;
+        case 'episodio':
+            history.sort((a, b) => {
+                const numA = parseInt(a.episode.match(/\d+/)?.[0] || 0);
+                const numB = parseInt(b.episode.match(/\d+/)?.[0] || 0);
+                return numA - numB;
+            });
+                break;
+        case 'fecha':
+        default:
+            history.sort((a, b) =>  dateStringToTimestamp(b.fecha) -  dateStringToTimestamp(a.fecha));
+    }
+
+    // Invertir si el orden es descendente
+    if (order === 'desc' && sortBy !== 'date') {
+        history.reverse();
+    }
+
+    return history;
+}
+
+// Funcion para eliminar un elemento del historial por URL
+function removeFromHistory(url) {
+    const history = getHistory();
+    const filteredHistory = history.filter(item => item.url !== url);
+    cacheLocal.setItem(user_key, JSON.stringify(filteredHistory));
+}
+
+// Funcion para limpiar todo el historial
+function clearHistory() {
+    cacheLocal.removeItem(user_key);
+    cacheLocal.removeItem(default_key);
+}

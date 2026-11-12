@@ -1,0 +1,47 @@
+function obtener_notificaciones() {
+				$.ajax({
+					type:"POST",
+					url:authdomain+"/api/notificaciones_nuevas",
+					data: {api_token: api_token},
+					success:function(data){
+						if(data.total > 0) {
+							if($('#notify b').length == 0) {
+								$('#notify').append('<b>'+data.total+'</b>');
+							}
+							if($('button[data-show="global"]').length && data.global > 0) {
+								$('button[data-show="global"] b').remove();
+								$('button[data-show="global"]').append('<b>'+data.global+'</b>');
+							}
+							if($('button[data-show="comentarios"]').length && data.comentarios > 0) {
+								$('button[data-show="comentarios"] b').remove();
+								$('button[data-show="comentarios"]').append('<b>'+data.comentarios+'</b>');
+							}
+						}
+					},
+					error: function(xhr, status, error) {
+						console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+					},
+					dataType: "json"
+				});
+}
+
+function load_websocket(uid) {
+	obtener_notificaciones();
+
+const echo = new Echo.default({
+        broadcaster: 'reverb',
+		key: 'f7iozyrhdtq1gccf9zul',
+		wsHost: (window.location.hostname == 'localhost' ? window.location.hostname : login_domain.split('//')[1]),
+		wsPort: 8090,
+		wssPort: 443,
+		disableStats: true,
+		forceTLS:  (window.location.hostname == 'localhost' ? false : true),
+		enabledTransports: ['ws', 'wss'],
+    });
+
+    echo.channel("user."+uid)
+        .listen("UserSignal", (e) => {
+            console.log("Notificacion recibida:", e.value);
+			obtener_notificaciones();
+        });
+}

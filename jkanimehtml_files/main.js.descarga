@@ -1,0 +1,3387 @@
+/*  ---------------------------------------------------
+DIOS TE AMA
+---------------------------------------------------------  */
+
+'use strict';
+
+var testdata = []; 
+
+var loadingDots = '<div id="loader"><div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div>';
+
+var token = $("meta[name='csrf-token']").attr("content");
+var authdomain=login_domain;
+
+//'https://login.'+window.location.hostname.split('.')[window.location.hostname.split('.').length-2]+'.'+window.location.hostname.split('.')[window.location.hostname.split('.').length-1];
+
+var cdndomain = $('img.logoweb').attr('src').match(/^(https?:)?\/\/[^/]+/i)[0];
+
+var pagina = 1;
+/* GUARDAR */
+
+
+function generarPaginacion(total, onPage) {
+  if (window.matchMedia('(max-width: 768px)').matches) {
+	  const $cont = $('.ajax-paginator');
+
+  $cont.empty();
+  $('#loadmore').hide();
+
+  const $ul = $('<ul>').addClass('pagination').addClass('ajax-pagination');
+
+  const crearItem = (texto, paginaNum, disabled = false, activo = false) => {
+    const $li = $('<li>').addClass('page-item');
+
+    if (disabled) $li.addClass('disabled');
+    if (activo)   $li.addClass('active');
+
+    const $a = $('<a>')
+      .addClass('page-link d-bg3 b-dark')
+      .attr('href', '#')
+      .attr('data-page', paginaNum)
+      .html(texto);
+
+    if (!disabled && !activo) {
+      $a.on('click', function (e) {
+        e.preventDefault();
+        pagina = parseInt($(this).data('page'), 10);
+        $cont.find('li.active').removeClass('active');
+        $(this).parent().addClass('active');
+        onPage(pagina);
+      });
+    } else {
+      $a.on('click', e => e.preventDefault());
+    }
+
+    return $li.append($a);
+  };
+
+  const crearDots = () => {
+    const $li = $('<li>').addClass('page-item disabled');
+    $li.append($('<span>').addClass('page-link d-bg3 b-dark').html('&hellip;'));
+    return $li;
+  };
+
+  const win = 2;
+  const start = Math.max(2, pagina - win);
+  const end   = Math.min(total - 1, pagina + win);
+
+  $ul.append(crearItem('&laquo;', pagina - 1, pagina === 1));
+  $ul.append(crearItem(1, 1, false, pagina === 1));
+  if (start > 2) $ul.append(crearDots());
+
+  for (let i = start; i <= end; i++) {
+    $ul.append(crearItem(i, i, false, i === pagina));
+  }
+
+  if (end < total - 1) $ul.append(crearDots());
+  if (total > 1) $ul.append(crearItem(total, total, false, pagina === total));
+  $ul.append(crearItem('&raquo;', pagina + 1, pagina === total));
+
+  $cont.append($ul);
+  $cont.show();
+}
+}
+
+function fecha_humana(elem) {
+	// Función interna para el cálculo de la fecha humanizada
+	const getFechaHumana = (fechaString) => {
+		if (!fechaString) return 'N/A';
+
+		// Modificación clave: agregamos 'Z' para que se interprete como UTC
+		const fechaPasada = new Date(fechaString + 'Z');
+		const ahora = new Date();
+		const diferenciaEnMilisegundos = ahora - fechaPasada;
+
+		const segundos = Math.floor(diferenciaEnMilisegundos / 1000);
+		const minutos = Math.floor(segundos / 60);
+		const horas = Math.floor(minutos / 60);
+		const dias = Math.floor(horas / 24);
+		const meses = Math.floor(dias / 30.44);
+		const años = Math.floor(dias / 365.25);
+
+		if (años > 0) return `hace ${años} año${años > 1 ? 's' : ''}`;
+		if (meses > 0) return `hace ${meses} mes${meses > 1 ? 'es' : ''}`;
+		if (dias > 0) return `hace ${dias} día${dias > 1 ? 's' : ''}`;
+		if (horas > 0) return `hace ${horas} hora${horas > 1 ? 's' : ''}`;
+		if (minutos > 0) return `hace ${minutos} minuto${minutos > 1 ? 's' : ''}`;
+		if (segundos > 0) return `hace ${segundos} segundo${segundos > 1 ? 's' : ''}`;
+
+		return 'ahora mismo';
+	};
+
+	// Busca todos los elementos con la clase .timeago
+	const elementosTimeago = document.querySelectorAll(elem);
+
+	// Recorre cada elemento y actualiza su texto
+	elementosTimeago.forEach(elemento => {
+		const fechaOriginal = elemento.getAttribute('datetime');
+		const fechaHumanizada = getFechaHumana(fechaOriginal);
+		elemento.textContent = fechaHumanizada;
+	});
+}
+
+function crear_cookie(cname, cvalue, exMins) {
+				var d = new Date();
+				d.setTime(d.getTime() + (exMins*60*1000));
+				var expires = "expires="+d.toUTCString();
+				document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+				}
+			function leer_cookie(cname) {
+				    var name = cname + "=";
+				    var decodedCookie = decodeURIComponent(document.cookie);
+				    var ca = decodedCookie.split(';');
+				    for(var i = 0; i <ca.length; i++) {
+					var c = ca[i];
+					while (c.charAt(0) == ' ') {
+					    c = c.substring(1);
+					}
+					if (c.indexOf(name) == 0) {
+					    return c.substring(name.length, c.length);
+					}
+				    }
+				    return "";
+}
+function msj_registro(toastItem, str = false) {
+
+	var myToast = $.toast({
+		text : str ? str : 'Solo usuarios con cuenta pueden utilizar esta función.',
+		icon: 'error',
+		hideAfter : 4000,
+		bgColor : '#027bff',
+		textColor : '#fff',
+		loaderBg: '#ff9d00',
+		position: {
+			left: toastItem.offset().left-parseInt(230)+parseInt(toastItem.width()),
+			top: toastItem.offset().top-parseInt(toastItem.height()*2.7),
+		},
+		});
+		$('.jq-toast-wrap').css('position', 'absolute');
+
+}
+
+//Auth
+var api_token = leer_cookie('jkauth');
+
+$.ajaxSetup({
+	crossDomain: true,
+	xhrFields: { withCredentials: true },
+});
+
+function validar_usuario() {
+	if(!leer_cookie('jkauth')) {
+		location.href = authdomain;
+	}
+}
+function sesion_invalida() {
+	crear_cookie('jkauth', false, -0);
+	$.alert({
+		title: '¡Error!',
+		content: 'Tu sesión no es válida o expiró, por favor inicia sesión nuevamente.',
+	});
+	location.href = authdomain+"/salir";
+}
+function es_usuario() {
+	if(leer_cookie('jkauth')) {
+		return true;
+	}
+	return false
+}
+
+
+if(api_token.length > 0) {
+$('#notify').show();
+}
+
+var api_user;
+//Actualizar preferencias
+function anime_checks(anime, anime_id = false, callback = false, full = false) {
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/anime_checks"+(full ? '/full' : ''),
+			    data: {anime: anime, anime_id: anime_id},
+			    success:function(data){ 
+			    callback(data);
+			     },
+			     error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+}
+
+const onValidUsername = (val) => {
+    const usernameRegex = /^[a-zA-Z0-9_]+$/
+    return usernameRegex.test(val)
+}
+
+/* MODAL */
+function msj(titulo='Alerta',contenido='Contenido',idioma=['Cerrar','Aceptar', ''],callback=false, width = 800){
+var ModalData=document.getElementById("modal");
+var boton='';
+ModalData.innerHTML='<div id="modal-back"></div><div class="modal-d"><div id="modal-c"><h3>'+titulo+'</h3><span style="'+idioma[2]+'" id="mc">'+contenido+'</span><div id="buttons"><a id="mclose" href="#">'+idioma[0]+'</a>'+boton+'</div></div></div>';
+document.querySelector(".modal-d").style.height=document.getElementById("mc").offsetHeight+150+'px';
+document.querySelector(".modal-d").style.maxWidth=width+"px";
+
+document.getElementById('mclose').onclick=function(){ModalData.innerHTML='';};
+document.getElementById('modal-back').onclick=function(){ModalData.innerHTML='';}
+}
+
+function msj_share(tipo = 'alert', titulo = 'Alerta', contenido = 'Contenido', idioma = ['Cerrar', 'Aceptar'], callback = false) {
+	var ModalData = document.getElementById("modal");
+	var boton = '';
+	if(tipo == 'confirm') {var boton = '<a href="'+idioma[2]+'" id="mclose">'+idioma[1]+'</a>';}
+	ModalData.innerHTML = '<div id="share-back"></div><div class="share-content"><div id="modal-s"><h3>'+titulo+'</h3><span id="mc">'+contenido+'</span><div id="buttons"><a id="mclose" href="#">'+idioma[0]+'</a>'+boton+'</div></div></div>';
+	document.querySelector(".share-content").style.height = document.getElementById("mc").offsetHeight+100 + 'px';
+	document.getElementById('mclose').onclick=function(){ ModalData.innerHTML = '';};
+	document.getElementById('share-back').onclick=function(){ ModalData.innerHTML = '';}
+}
+
+function msj_download(titulo='Descargando...',contenido='Contenido',idioma=['Cerrar','Aceptar']){
+var ModalData=document.getElementById("modal");
+ModalData.innerHTML='<div id="modal-back"></div><div class="modal-d"><div id="modal-c"><h3>'+titulo+'</h3><span id="mc">'+contenido+'<span class="dt"></span></span></div></div>';
+document.querySelector(".modal-d").style.height=document.getElementById("mc").offsetHeight+150+'px';
+}
+//Personajes
+function personajes() {
+console.log("personajes");
+			$.ajax({
+			    type:"POST",
+			    url: $('li[data-callback="personajes"]').attr('data-url'),
+			    data: {anime: $("#guardar-anime").attr('data-anime'), _token: token},
+			    success:function(data){ 
+			    console.log(data);
+			    $('.personajes.animetab').html("<div class='row row-cols-md-3 row-cols-lg-5 row-cols-2'></div>");
+			    if(data.length > 0) {
+			    $.each(jparse(data), function(i, item) {
+					console.log(item);
+					$('.personajes.animetab .row').append("<li class='col'><img src='"+item.imagen+"'/><a href='"+item.url+"'>"+item.nombre+"</a> <b>"+item.rol+"</b></li>");
+					});
+					$('.personajes.animetab .row').append('<li class="col-lg-12 mb-5 mt-2"><a href="'+pageURL+'personajes" class="btn btn-secondary">Ver todos</a></li>');
+					} else {
+					$('.personajes.animetab .row').html('<p class="no-results">Lo sentimos, no tenemos los personajes de este anime aún. Ten paciencia.</p>');
+					}
+			     },
+			     error: function(xhr, status, error) {
+				if(onerror) {onerror();}console.log(xhr.responseText);
+				},
+			});
+}
+//Social
+function social() {
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/social/",
+			    data: {anime: $("#guardar-anime").attr('data-anime')},
+			    success:function(data){
+			    $('.usersocial.animetab').html("<ul></ul>");
+			    $.each(data, function(i, item) {
+					$('.usersocial.animetab ul').append("<li><img src='"+item.img+"'/><a href='"+item.url+"'>"+item.usuario+"</a> marcó el anime como <b>"+item.tag+"</b>.</li>");
+					});
+			     },
+			     error: function(xhr, status, error) {
+				if(onerror) {onerror();}console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+}
+
+//Social
+function resenas() {
+			$('.realert').hide();
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/resenas",
+			    data: {anime: $("#guardar-anime").attr('data-anime'), p: pagina, orden: $('.reviews-form').val()},
+			    success:function(data){
+				console.log(data);
+
+			    $('.resenas #qloader').hide();
+
+				$('.re-count').text(data.total).show();
+
+				if(data.last_page > pagina) {
+				$(".more_re").show();
+				} else {
+				$(".more_re").hide();
+				}
+
+				if(data.data.length > 0) {
+			    $.each(data.data, function(i, item) {
+						// Genera tantas estrellas como indique el número (ej: 4 -> 4 etiquetas <i>)
+						var numEstrellas = item.estrellas || 0;
+						var htmlEstrellas = '<i class="ti ti-star-filled"></i>'.repeat(numEstrellas);
+
+						$('.resenas .relist').append(
+							'<div class="review-item d-bg d-border">' +
+								'<div class="review-avatar avatar-1">' +
+									'<img src="' + item.user.avatar + '">' +
+								'</div>' +
+								'<div class="review-content">' +
+									'<div class="review-header">' +
+										'<p class="review-name">' + item.user.usuario + '</p>' +
+										'<span class="review-date"><i class="far fa-clock mr-1"></i>' + item.fechahumana + '</span>' +
+									'</div>' +
+									'<div class="review-stars">' +
+										htmlEstrellas +
+									'</div>' +
+									'<p class="review-text">' + item.body + '</p>' +
+									'<div class="btn-group mt-2 d-border" data-review="'+item.id+'" role="group" aria-label="Votos"><button type="button" data-vote="like" class="btn btn-vote d-bg3 b-dark2 t-dark ' + (item.userlike ? 'active' : '') + '"><i class="ti ti-thumb-up"></i><span>' + (item.likes == null ? 0 : item.likes) + '</span></button><button type="button" data-vote="dislike" class="btn btn-vote d-bg3 b-dark2 t-dark ' + (item.userdislike ? 'active' : '') + '"><i class="ti ti-thumb-down"></i><span>' + (item.dislikes == null ? 0 : item.dislikes) + '</span></button></div>' +
+								'</div>' +
+							'</div>'
+						);
+					});
+				} else {
+					$('.realert').show();
+				}
+			     },
+			     error: function(xhr, status, error) {
+				if(onerror) {onerror();}console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+}
+
+//User info
+let usr_info = false;
+let api_usr_pending_promise = null;
+
+//Login auth google/discord
+const queryString = window.location.search;
+if (queryString.includes('?autologin=true')) {
+	crear_cookie('jkauth', true, 43800);
+	location.href = $(".header__logo a").attr('href');
+}
+
+function api_usr() {
+	if (api_usr_pending_promise) {
+		return api_usr_pending_promise;
+	}
+
+	if (usr_info && typeof usr_info !== 'boolean' && usr_info.authenticated !== false) {
+		return $.Deferred().resolve(usr_info).promise();
+	}
+
+	if (sessionLocal.getItem('api_usr_attempted_and_failed') && !leer_cookie('jkauth')) {
+		usr_info = { authenticated: false };
+		return $.Deferred().resolve(usr_info).promise();
+	}
+
+	api_usr_pending_promise = $.ajax({
+		type: "POST",
+		url: authdomain + "/api/usuario",
+		dataType: "json"
+	})
+	.then(function(data) {
+		api_usr_pending_promise = null;
+
+		sessionLocal.removeItem('api_usr_attempted_and_failed');
+
+		usr_info = data;
+		$('.usr-menu').addClass('img');
+		return data;
+	})
+	.fail(function(jqXHR, textStatus, errorThrown) {
+		api_usr_pending_promise = null;
+
+		try {
+			// Intenta parsear la respuesta del error
+			const errorData = jparse(jqXHR.responseText);
+			// Comprueba si el mensaje es el específico que buscas
+			if (jqXHR.status === 401 && errorData.message === 'Unauthenticated.') {
+
+				sessionLocal.setItem('api_usr_attempted_and_failed', 'true');
+
+				if(leer_cookie('jkauth')) {
+					sesion_invalida();
+				}
+
+
+			}
+		} catch (e) {
+			// El error no es un JSON o no tiene el formato esperado,
+			// así que no hacemos nada con el sessionLocal.
+		}
+
+		usr_info = { authenticated: false, message: 'API error', error: errorThrown };
+		return $.Deferred().reject(errorThrown).promise();
+	});
+
+	return api_usr_pending_promise;
+}
+
+
+function es_guardado_directorio(){
+	const items = [];
+
+	$.ajax({
+		type:"POST",
+		url:authdomain+"/api/json_guardados",
+		data: {api_token: api_token},
+		success:function(data){
+			if(data == "token") { sesion_invalida();}
+			//console.log(data);
+			testdata = data;
+			if($('.page_g').length) {
+				$( ".page_g .svea" ).each(function() {
+					$(this).fadeIn();
+					var g = $(this).attr('data-anime');
+
+					//$(this).removeAttr("data-g");
+
+					var faicon = "ti-shield-plus";
+					var title = "guardar";
+					if(data[g] !== undefined) {
+
+						$(this).addClass("activo");
+						if(data[g] == 1) {
+							faicon = "ti-eye";
+							var title = "mirando";
+						} else if(data[g] == 2) {
+							var title = "Visto";faicon = "ti-circle-check";
+						} else if(data[g] == 3) {
+							var title = "Por ver";faicon = "ti-player-pause";
+						} else if(data[g] == 4) {
+							var title = "Favorito";faicon = "ti-heart";
+						}
+						$(this).attr('title',title);
+						$(this).find('i').attr('class',"ti "+faicon);
+						$(this).attr('data-status',faicon);
+					}
+				});
+			}
+		},
+		error: function(xhr, status, error) {
+			console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+		},
+		dataType: "json"
+	});
+
+}
+
+var current_active = 0;
+function es_guardado(anime = false){
+	if(es_usuario()) {
+		$.ajax({
+			type:"POST",
+			url:authdomain+"/api/es_guardado",
+			data: {id: anime, api_token: api_token},
+			success:function(data){
+				if(data == "token") { sesion_invalida();}
+				console.log(data);
+				if(data) {
+					actualizar_guardado(data);
+
+					$('.guardar_anime').addClass('activo');
+					current_active = data;
+				} else {return false;}
+			},
+			error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+			},
+			dataType: "json"
+		});
+	}
+}
+
+function actualizar_guardado(d = false) {
+	var txt = 'Guardar anime';
+	var icon = 'ti ti-shield-plus';
+	$(".guardar_anime").attr('data-gd',d);
+	switch (parseInt(d)) {
+		case 0:
+			txt = "Guardado";
+			icon = "ti ti-bookmark";
+			break;
+		case 1:
+			txt = "Mirando";
+			icon = "ti ti-eye";
+			break;
+		case 2:
+			txt = "Visto";
+			icon = "ti ti-circle-check";
+			break;
+		case 3:
+			txt = "Por ver";
+			icon = "ti ti-player-pause";
+			break;
+		case 4:
+			txt = "Favorito";
+			icon = "ti ti-heart";
+			break;
+		case 5:
+			txt = "Dropped";
+			icon = "ti ti-thumb-down";
+			break;
+	}
+
+	$(".guardar_anime i").attr('class',icon);
+	$(".guardar_anime span").text(txt);
+}
+function stats(anime = false){
+	$.ajax({
+		type:"POST",
+		url:authdomain+"/api/stats",
+		data: {id: anime, api_token: api_token},
+		success:function(data){
+			if(data == "token") { sesion_invalida();}
+			if(data) {
+
+				for (var st of data) {
+					$('.count[data-stat="tag'+st.tag+'"] b').text(st.total);
+				}
+
+			} else {return false;}
+		},
+		error: function(xhr, status, error) {
+			console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+		},
+		dataType: "json"
+	});
+
+}
+function guardar_anime(info = false, id = false, tag = false) {
+	console.log(info);
+	console.log(id);
+	$.ajax({
+		type:"POST",
+		url:authdomain+"/api/guardar_anime",
+		data: {ainfo: info, id: id, tag: tag},
+		success:function(data){
+			console.log(data);
+			if(data == "token") { sesion_invalida();}
+		},
+		error: function(xhr, status, error) {
+			console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+		},
+		dataType: "json"
+	});
+
+}
+
+function recibir_notificacion_anime_btn() {
+
+	$('button[data-notificar]').click(function() {
+	if(es_usuario()) {
+	$(this).attr('disabled', true);
+
+	$.ajax({
+		type:"POST",
+		url:authdomain+"/api/notificar_estreno",
+		data: {id: $(this).attr('data-notificar')},
+		success:function(data){
+			console.log(data);
+		},
+		error: function(xhr, status, error) {
+			console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+		},
+		dataType: "json"
+	});
+
+} else {
+	msj_registro($(this));
+	}
+
+	});
+
+
+}
+
+function guardar_anime_btn() {
+	if($('#guardar-anime').length) {
+
+		if($('.anime_info').length) {es_guardado($('#guardar-anime').attr('data-anime'));stats($('#guardar-anime').attr('data-anime'));}
+
+		$(document).on('click', function(event) {
+			if (!$(event.target).closest('#guardar-anime').length && !$(event.target).closest('.dropmenu').length) {
+				$('.dropmenu').html('');
+			}
+		});
+
+
+		$('#guardar-anime,.svea,.guardar_anime').click(function() {
+
+			if($('.horarybox').length) {
+				$('.dropmenu').html('');
+				var gtitle = $('.dirbox').length ?  $(this).parent().find('h5').text() : $(this).parent().find('img').attr('title');
+				var gthumb = $(this).parent().find('img').attr('src').replace(cdndomain, '');
+				var gdesc = "";
+				var gurl = $(this).parent().find('a').attr('href');
+				var gdate = new Date().toLocaleString();
+				var gtipo = $(this).attr('data-tipo');
+			} else if($('.page_g').length) {
+				$('.dropmenu').html('');
+				var gtitle = $(this).attr('data-title')
+				var gthumb = $(this).parent().find('img').attr('src').replace(cdndomain, '');
+				var gdesc = "";
+				var gurl = $(this).attr('data-url');
+				var gdate = new Date().toLocaleString();
+				var gtipo = $(this).attr('data-tipo');
+			} else {
+				var gtitle = $('.anime_info h3').text();
+				var gthumb = $('.anime_pic img').attr('src').replace(cdndomain, '');
+				var gdesc = $('p[rel="sinopsis"]').text().substring(0,150);
+				var gurl = location.pathname;
+				var gdate = new Date().toLocaleString();
+				var gtipo = $('li[rel="tipo"]').html().split(" ")[1];
+			}
+
+			var ginfo = { status: $(this).find('.dropmenu').attr('data-status'), title : gtitle,thumb: gthumb, synopsis: gdesc,url: gurl,date: gdate,tipo: gtipo};
+			var aID = $(this).attr('data-anime');
+
+			console.log(ginfo);
+
+
+			$(this).find('.dropmenu').html('<ul><li><a data-drop="r" href="#"><i class="ti ti-playlist-x" aria-hidden="true"></i> Quitar</a></li><li><a data-drop="0" href="#"><i class="ti ti-bookmark" aria-hidden="true"></i> Guardar</a></li><li><a data-drop="1" href="#"><i class="ti ti-eye" aria-hidden="true"></i> Mirando</a></li><li><a class="'+($(this).find('.dropmenu').attr('data-status') == 'finished' ? '' : 'disabled')+'" data-drop="2" href="#"><i class="ti ti-circle-check" aria-hidden="true"></i> Visto</a></li><li><a data-drop="3" href="#"><i class="ti ti-player-pause" aria-hidden="true"></i> Por ver</a></li><li><a data-drop="4" href="#"><i class="ti ti-heart" aria-hidden="true"></i> Favorito</a></li><li><a data-drop="5" href="#"><i class="ti ti-thumb-down" aria-hidden="true"></i> Dropped</a></li></ul>');
+
+			if(!$(this).hasClass('activo')) {
+				$(this).find('.dropmenu a[data-drop="r"]').parent().remove();
+			} else {
+				$(this).find('.dropmenu a[data-drop="0"]').parent().remove();
+			}
+
+			if(!$('.horarybox').length || !$('.page_g').length) {if(current_active > 0) {$('.dropmenu a[data-drop="'+current_active+'"]').addClass('activo');}}
+
+			$('.dropmenu li a').click(function(e) {
+				var gbtn = $(this).parent().parent().parent().parent();
+				e.preventDefault();
+
+
+				if(es_usuario()) {
+
+					if($(this).hasClass('disabled')) {
+						alert("No puedes marcar como visto un anime que aún sigue en emisión.");
+					} else {
+						var marca = $(this).attr('data-drop');
+
+						console.log(marca);
+
+						actualizar_guardado(marca);
+
+						if(!$('.horarybox').length || !$('.page_g').length) {current_active = marca;}
+						if($('.horarybox').length) {
+							gbtn.attr('data-status', $(this).find('i').attr('class').replace('ti ',''));
+							gbtn.find('i').attr('class', $(this).find('i').attr('class'));
+						}
+						if($('.page_g').length) {
+							gbtn.attr('data-status', $(this).find('i').attr('class').replace('ti ',''));
+							gbtn.find('i').attr('class', $(this).find('i').attr('class'));
+						}
+						if(marca >= 0) {
+							gbtn.addClass('activo');
+						} else {
+							gbtn.removeClass('activo');
+							gbtn.attr('data-status', '');
+						}
+
+						console.log(aID);
+						guardar_anime(JSON.stringify(ginfo), aID, marca);
+					}
+				} else {
+					msj_registro($('.guardar_anime:visible'));
+				}
+
+			});
+		});
+
+
+	}
+}
+(function ($) {
+
+//Share
+	function autoselect(input) {
+		input.focus();
+		input.select();
+	}
+
+	$('#sharebtn').click(function(e) {
+		e.preventDefault();
+
+		var urlshare = location.href;
+		var compartir_html = '<input type="text" id="sharelink" class="autoselect form-control" value="'+urlshare+'"><br><a class="noajax" href="https://api.whatsapp.com/send/?text='+urlshare+'&type=custom_url&app_absent=0"><button class="swp effect not-style"><i class="ti ti-whatsapp"></i> Whatsapp </button></a><a target="_blank" href="https://www.facebook.com/sharer/sharer.php?u='+urlshare+'" class="noajax"><button class="sfb effect not-style"><i class="ti ti-facebook"></i> Facebook </button></a><a target="_blank" href="https://twitter.com/share?url='+urlshare+'" class="noajax"><button class="stw effect not-style"><i class="ti ti-twitter"></i> Twitter </button></a><button data-copy="sharelink" class="effect copytext not-style">Copiar link</button>';
+		msj_share('alert', 'Compartir', compartir_html, ['Cerrar', '']);
+
+
+		$('.copytext').click(function() {
+			autoselect($('.autoselect'));
+			var itemCopy = $(this).attr('data-copy');
+
+			var copyText = document.getElementById(itemCopy);
+			copyText.select();
+			copyText.setSelectionRange(0, 99999); // For mobile devices
+			navigator.clipboard.writeText(copyText.value);
+			if (window.getSelection) {window.getSelection().removeAllRanges();} else if (document.selection) {document.selection.empty();}
+			alert('Copiado!')
+		});
+
+	});
+
+//Custom tabs
+$('.custom-tabs li').off('click');
+$('.custom-tabs li').click(function () {
+$('.custom-tabs li').removeClass('active');
+$(this).addClass('active');
+
+    var show = $('.' + $(this).attr('data-tab'));
+    $('.tab:visible').not('.' + $(this).attr('data-tab')).hide();
+    if(show.is(":visible")) {show.hide();} else {show.show();}
+    return false;
+});
+
+//Anime tabs
+$('.anime-tabs li').off('click');
+$('.anime-tabs li').click(function () {
+    $('.anime-tabs li').removeClass('active');
+    $(this).addClass('active');
+
+    var tabName = $(this).attr('data-tab');
+    var show = $('.' + tabName);
+    $('.animetab:visible').not('.' + tabName).hide();
+    if (show.is(":visible")) { show.hide(); } else { show.show(); }
+
+    var callback = $(this).attr('data-callback');
+
+    // Solo ejecutar si tiene #qloader y NO se ha cargado antes
+    if (show.find("#qloader").length && show.data('loaded') !== true) {
+        show.data('loaded', true); // marcar como cargado
+        window[callback]();
+    }
+
+    return false;
+});
+
+
+
+
+//Tabs programacion
+$('.progtabs button').click(function() {
+$(".progtabs .selected").removeClass("selected");
+$(".anime_programing,.donghuas_programing").hide();
+$("."+$(this).attr('data-show')).show();
+$(this).addClass("selected");
+});
+
+//Toggle
+$('#togglesee').click(function() {
+$(this).find('div#c').toggle(400);
+$(this).toggleClass('open');
+});
+
+if(!$('#aditional').length) {
+$('#togglesee.alternativost').click();
+}
+
+console.log(authdomain);
+console.log(api_token);
+
+
+function limitar_texto(text = false, count){
+  return text ? text.substring(0, count) + (text.length > count ? "..." : "") : '';
+}
+
+$('.logdom').each(function (){
+$(this).attr('href', authdomain+$(this).attr('href'));
+});
+
+$('.usr-menu').click(function() {
+$('#authmenu').toggle();
+});
+
+$('.salir').click(function(e) {
+crear_cookie('jkauth', false, -0);
+return true;
+});
+
+/* User info */
+
+var tmpusr = cacheLocal.getItem('guardado');
+var updateinfo = false;
+
+
+
+if(api_token.length == 0 && $('.onlyprofile').length > 0) {
+$('.onlyprofile').hide();
+var current_perfil = $('.row[data-user]').attr('data-user');
+$('title').text("Perfil "+current_perfil);
+$('a[href*="$user"]').each(function() {
+$(this).attr('href',$(this).attr('href').replace('$user',current_perfil));
+});
+
+}
+
+if(api_token.length == 0) {
+$('#authmenu').remove();
+}
+
+
+api_usr().then(function(data) {
+
+
+	if(data.message !== undefined) {
+		if(data.message == 'Unauthenticated.') {
+			sesion_invalida();
+		}
+	}
+
+	if(usr_info.usuario !== undefined) {
+
+	if(!leer_cookie('jkauth')) {
+		crear_cookie('jkauth', true, 43800);
+		location.reload();
+	}
+
+	setUserKey(usr_info.id);
+
+	if($('.usr-menu').length) {
+		api_user = usr_info.usuario;
+
+		if(onValidUsername(api_user) == false) {
+			if(!location.pathname.includes("/editar-perfil/")) { location.href="/dash/editar-perfil/"; }
+		}
+
+		if($('.row[data-user]').length) {
+			var current_perfil = $('.row[data-user]').attr('data-user');
+			if(api_user !== current_perfil) {
+				$('.onlyprofile').hide();
+			} else {
+				$('title').text("Mi perfil");
+				$('.onlyprofile').show();
+			}
+		} else {
+			$('.onlyprofile').show();
+		}
+		$('.usr-menu').addClass('img');
+		$('.fa.not').removeClass('not');
+		$('.usr-menu').html('<img src="'+usr_info.perfil_img+'"/><span class="uname">'+usr_info.usuario+'</span>');
+
+		$('#usrinfo').prepend('<a class="im" href="/usuario/'+usr_info.usuario+'"><img src="'+usr_info.perfil_img+'"/><span>'+usr_info.usuario+'</span></a>');
+
+		$('a[href*="$me"]').each(function() {
+			$(this).attr('href',$(this).attr('href').replace('$me',usr_info.usuario));
+		});
+
+		$('a[href*="$user"]').each(function() {
+			$(this).attr('href',$(this).attr('href').replace('$user',current_perfil));
+		});
+
+		if($('#guardados_orden').length){
+			console.log(usr_info);
+			$("#guardados_orden").val(usr_info.filtro_default == null ? 1 : usr_info.filtro_default);
+			$('#guardados_orden').niceSelect('update');
+
+
+			if($('.guardados.spad').length) {
+				$('.guardados.spad').show();
+				guardados_inicio();
+				guardados_inicio_preferencias();
+			}
+
+		}
+
+		if($('.trailer_results').length){
+			//console.log(usr_info);
+
+			$('.trailer_results').html(loader);
+			obtener_trailers();
+		}
+
+		if($('.studios_page').length){
+			//console.log(usr_info);
+
+			$('.studios_page').html(loader);
+			obtener_estudios();
+		}
+
+		if($('#notify').length){
+			load_websocket(usr_info.id);
+		}
+
+	}
+
+	check_owner();
+	}
+}).catch(function(error) {
+	console.error("Error en la primera llamada de api_usr:", error);
+});
+
+if(leer_cookie('jkauth')) {
+
+
+$('.usr-menu').addClass('img');
+
+} else {
+$('.fa.not').removeClass('not');
+$('.preferencias_inicio').remove();
+historial_usuario();
+}
+		
+$('.entrar').click(function(e) {
+if(leer_cookie('jkauth')) {
+return false;
+}
+e.preventDefault();
+//Login modal
+msj('', $('.auth_modal').html(), ['Cerrar', '', 'padding: 0;'], false, 600);
+$('.modal-d').css('height',$('.auth-wrapper:visible').height()+130+'px');
+
+$('#showRegister').click(function(e) {
+	e.preventDefault();
+	$('.auth-container').addClass('active');
+	$('.modal-d').css('height',$('.auth-wrapper:visible').height()+60+'px');
+
+});
+
+$('#showLogin').click(function(e) {
+	e.preventDefault();
+	$('.auth-container').removeClass('active');
+	$('.modal-d').css('height',$('.auth-wrapper:visible').height()+130+'px');
+});
+
+//Ajax login
+$( "#loginForm" ).submit(function( e ) {
+
+$('#loginForm .btn').attr('disabled', true);
+
+$.ajax({
+	type:"POST",
+	url:authdomain+"/api/login",
+	data: $(this).serialize(),
+	   success:function(data){
+		   console.log(data);
+
+		   var json_data = data;
+		   setTimeout(function(){ $('#loginForm .btn').attr('disabled', false); }, 500);
+		   if(json_data.error) {
+			   $('.login .alert').text(json_data.messaje);
+			   $('.login .alert').show();
+			   setTimeout(function(){ $('.login .alert').hide(800); }, 3000);
+			   $('.modal-d').css('height',$('.auth-wrapper:visible').height()+130+'px');
+		   } else {
+			   //cookie 1 mes
+			   crear_cookie('jkauth', json_data.jkauth, 43800);
+			   $('.login .alert').hide();
+			   location.reload();
+		   }
+	   },
+	   error: function(xhr, status, error) {
+		   console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+		   $('#loginForm .btn').attr('disabled', false);
+
+	   },
+	   dataType: "json"
+});
+			
+  
+  e.preventDefault();
+});
+
+
+$( "#registerForm" ).submit(function( e ) {
+
+	$('#registerForm .btn').attr('disabled', true);
+
+	$.ajax({
+		type:"POST",
+		url:authdomain+"/api/register",
+		data: $(this).serialize(),
+		   dataType: 'json',
+		   success:function(data){
+			   console.log(data);
+
+			   var json_data = data;
+				console.log(json_data);
+
+				//cookie 1 mes
+				crear_cookie('jkauth', json_data.jkauth, 43800);
+				$('.register .alert').hide();
+				location.reload();
+
+		   },
+		   error: function(xhr, status, error) {
+
+			   var errorResponse = jparse(xhr.responseText);
+
+				console.log('Mensaje de error del servidor:', errorResponse);
+
+			   $('.register .alert').text(errorResponse.message);
+			   $('.register .alert').show();
+			   $('.modal-d').css('height',$('.auth-wrapper:visible').height()+60+'px');
+
+			   setTimeout(function(){ $('.register .alert').hide(800); }, 3000);
+
+			   $('#registerForm .btn').attr('disabled', false);
+
+		   },
+
+	});
+
+
+	e.preventDefault();
+});
+
+});
+
+
+function ajustar_modal(){document.querySelector(".modal-d").style.height=document.getElementById("mc").offsetHeight+150+'px';}
+
+    /*------------------
+        Preloader
+    --------------------*/
+    $(window).on('load', function () {
+        $(".loader").fadeOut();
+        $("#preloder").delay(200).fadeOut("slow");
+
+        /*------------------
+            FIlter
+        --------------------*/
+        $('.filter__controls li').on('click', function () {
+            $('.filter__controls li').removeClass('active');
+            $(this).addClass('active');
+        });
+        if ($('.filter__gallery').length > 0) {
+            var containerEl = document.querySelector('.filter__gallery');
+            var mixer = mixitup(containerEl);
+        }
+    });
+
+    /*------------------
+        Background Set
+    --------------------*/
+    $('.set-bg').each(function () {
+        var bg = $(this).data('setbg');
+        $(this).css('background-image', 'url(' + bg + ')');
+    });
+
+    // Search model
+    $('.search-switch').on('click', function () {
+        $('.search-model').fadeIn(400);
+    });
+
+    $('.search-close-switch').on('click', function () {
+        $('.search-model').fadeOut(400, function () {
+            $('#search-input').val('');
+        });
+    });
+
+    /*------------------
+		Navigation
+	--------------------*/
+    $(".mobile-menu").slicknav({
+        prependTo: '#mobile-menu-wrap',
+        allowParentLinks: true
+    });
+
+
+
+    /*------------------
+        Video Player
+    --------------------*/
+    const player = new Plyr('#player', {
+        controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'captions', 'settings', 'fullscreen'],
+        seekTime: 25
+    });
+
+    /*------------------
+        Niceselect
+    --------------------*/
+    $('select:visible').not('.notnice').niceSelect();
+
+    /*------------------
+        Scroll To Top
+    --------------------*/
+    $("#scrollToTopButton").click(function() {
+        $("html, body").animate({ scrollTop: 0 }, "slow");
+        return false;
+     });
+/* MENU */
+ $('.box-link.tp a').click ( function() {
+   $(this).html($(this).html() == 'Cerrar X' ? 'Por Tipo &darr;' : 'Cerrar X');
+   $('.type-list').slideToggle("fast");
+  return false;
+ });
+  $('.box-link.lt a').click ( function() {
+   $(this).html($(this).html() == 'Cerrar X' ? 'Por Genero &darr;' : 'Cerrar X');
+   $('.genre-list').slideToggle("fast");
+    return false;
+ });
+ $(".addmenu").clone().appendTo( "#navbar_main" );
+
+
+
+
+$('#report_trailer').click(function (e) {
+        //Login modal
+msj('<i class="icon_error-triangle_alt"></i> Reportar trailer', '<p class="error_msj" style="display: none;"></p><form method="post" name="report" id="report_trailer_form" action=""><label for="a">Motivo de reporte</label><select class="form-control" name="motivo"><option value="0">Video caido</option><option value="1">Video incorrecto</option></select><br><label for="b">Explicanos el problema (opcional)</label><textarea rows="4" maxlength="150" name="comentario" class="form-control"id="b"></textarea><br><input type="submit" name="submit" id="boton" class="btn btn-danger" value="Reportar trailer"></form>', ['Cancelar']);
+
+//Ajax login
+$( "#report_trailer_form" ).submit(function( e ) {
+
+var dataForm = $(this).serialize();
+dataForm += '&_token='+token;
+
+$('#report_trailer_form #boton').attr('disabled', true);
+
+	$.ajax({
+		type:"POST",
+		url: $('#report_trailer').attr('data-ajax'),
+		data: dataForm,
+		success:function(data){ 
+		
+		$('#modal').html('');
+
+		$.alert({
+		title: 'Info',
+		content: data.msj,
+		});
+
+		console.log(data);
+
+		},
+		error: function(xhr, status, error) {
+		console.log(xhr.responseText);
+		},
+		dataType: "json"
+		});
+			
+  
+  e.preventDefault();
+});
+});
+			//Add trailer
+			$(".addtrailer").on("click", function(e){
+
+	if(!es_usuario()) {
+
+	msj_registro($(".addtrailer"));
+
+	} else {
+
+	msj('', '<p class="error_msj" style="display: none;"></p><h3>Sugerir trailer</h3><form method="post" name="report" id="trailer_form" action=""><label for="a">URL</label><input name="url" required placeholder="Ej: https://www.youtube.com/watch?v=dzStNmQpzBA" class="form-control" id="b"><br><input type="submit" name="submit" id="boton" class="btn btn-primary" value="Enviar"></form>', ['Cancelar']);
+
+$( "#trailer_form" ).submit(function( e ) {
+$('#trailer_form #boton').attr('disabled', true);
+var formData = {
+	url: $('input[name="url"]').val(),
+							anime: $('#guardar-anime').attr('data-anime'),
+};
+
+console.log(formData);
+
+$.ajax({
+	type:"POST",
+	url:authdomain+"/api/add_trailer",
+	data: formData,
+	success:function(data){
+
+		$('#modal').html('');
+
+		$.alert({
+			title: 'Info',
+		  content: data.msj,
+		});
+
+		$('.addtrailer').remove();
+
+		console.log(data);
+
+	},
+	error: function(xhr, status, error) {
+		console.log(xhr.responseText);
+
+		$.alert({
+			title: 'Error',
+		  content: 'Error al enviar, intenta más tarde.',
+		});
+
+	},
+	dataType: "json"
+});
+
+
+  e.preventDefault();
+});
+
+    }
+
+			});
+			
+
+
+			//Backup
+			$("#backup").on("click", function(e){
+			
+			$.confirm({
+				title: 'Realizar backup!',
+				content: 'Se te generará un archivo CSV para excel con la lista de animes que tienes guardados.',
+				buttons: {
+					cancelar: function () {
+					   
+					},
+					aceptar: function () {
+						    $.ajax({
+							type:"POST",
+							url:authdomain+"/api/backup",
+							data: {api_token: api_token},
+							success:function(data){ 
+
+
+					let csvContent = "data:text/csv;charset=utf-8," 
+						+ data.map(e => e.join(",")).join("\n");
+
+
+						var encodedUri = encodeURI(csvContent);
+						var link = document.createElement("a");
+						link.setAttribute("href", encodedUri);
+						let date = new Date();
+						link.setAttribute("download", "jkanime-backup-"+date.getDate()+"-"+String(date.getMonth()).padStart(2, '0')+"-"+date.getFullYear()+".csv");
+						document.body.appendChild(link); 
+						link.click();
+
+
+							 },
+							 error: function(xhr, status, error) {
+							console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+							},
+							 dataType: "json"
+						});
+					},
+        
+			}
+		});
+
+		});
+			
+			//Animes INICIO
+			function historial_usuario() {
+				$("#loadmore").hide();
+				var history = getHistory('fecha', 'asc');
+				var mostrar = 6;
+				$('#mas_recientes').attr('href', $('#mas_recientes').attr('data-historial'));
+
+				console.log(history.slice(0, mostrar));
+
+				var template = '<div class="guardado_item col-lg-2 col-md-6 col-sm-6 col-6"><div class="anime__item"><a href="{url}" title="{titulo}"><div class="anime__item__pic homemini set-bg" data-setbg="{img}" style="background-image: url(&quot;{img}&quot;);"><div class="anime__item__text"><ul><li class="anime">Episodio {episode}</li></ul></div><div class="card-percent"><span style="width: {time}%"></span></div><div class="card-shadow"></div></div></a><div class="anime__item__text tituloblanco"><h5><a href="{url}">{titulo}</a></h5></div></div></div>';
+
+
+				$('#loader').hide();
+
+				if(history.length == 0) {
+					$('.recientes_div').before('<p class="vacio" style="display: inline-block;text-align: center;width: 100%;margin: 25px 10px;">No tienes historial aún. Prueba ver algunos episodios y regresa C:</p>');
+				} else {
+
+					//$('.recientes_div').attr('class', 'mode1 row-cols-md-4 row-cols-2 row-cols-lg-5 row page_history recientes_div')
+					$.each(history.slice(0, mostrar), function( index, value ) {
+
+						var tmp = template;
+
+						var final_template = tmp.replace(/{img}/g, value.imagen).replace(/{url}/g, value.url).replace(/{titulo}/g, value.anime).replace(/{fecha}/g, value.fecha).replace(/{episode}/g, value.episode).replace(/{time}/g, value.time);
+
+						$('.recientes_div').append(final_template);
+
+						$(".recientes_div img").each(function(index) {
+							$(this).animate({ opacity: 1 }, 500);
+						});
+						if(index > 5) {
+							return false;
+						}
+					});
+
+				}
+			}
+
+			function guardados_inicio() {
+			$('#loader').show();
+			
+			//Historial
+			if($('select.preferencias_inicio').val() == 1) {
+				historial_usuario();
+			} else {
+				$('#mas_recientes').attr('href', $('#mas_recientes').attr('data-guardado'));
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/recientes?p="+pagina,
+			    data: {api_token: api_token},
+			    success:function(data){ 
+				//console.log(data);
+				
+				
+
+				//CARGAR MAS
+				console.log(data.last_page);
+				if(data.last_page > pagina) {
+				$("#loadmore").show();$("#loadmore").removeClass("activo");
+				} else {
+				$("#loadmore").hide();
+				}
+				$("#loadmore").removeClass("activo");
+				$("#loadmore").text(loadmoreText);
+				$("#filtrar_guardado").removeClass('activo');
+				
+				//MOSTRAR
+				var animes = data.data;
+				$('#loader').hide();
+
+				if(animes.length > 0) {
+				$('.vacio').remove();
+				
+				var recientes_template = '<div class="guardado_item col-lg-2 col-md-6 col-sm-6 col-6"><div class="anime__item"><a href="%url%" title="%titulo%"><div class="anime__item__pic homemini set-bg" data-setbg="%thumb%" style="background-image: url(&quot;%thumb%&quot;);"><div class="anime__item__text"><ul><li class="peli">%tipo%</li></ul></div></div></a><div class="anime__item__text tituloblanco"><h5><a href="%url%">%nombre%</a></h5></div></div></div>';
+				var anime_info;
+				for(var i=0;i<animes.length;i++) {
+				anime_info = jparse(animes[i]['info']);
+				
+				$('.recientes_div').append(recientes_template.replace(/%url%/g, anime_info.url).replace(/%tipo%/g, anime_info.tipo).replace(/%thumb%/g, cdndomain+anime_info.thumb).replace(/%titulo%/g, anime_info.title).replace(/%nombre%/g, limitar_texto(anime_info.title, 40)));
+				}
+				//console.log(animes);        	
+				} else {
+				if($('.guardado_item').length == 0 && $('.vacio').length == 0) {
+				$('#mas_recientes').remove();
+				$('.recientes_div').before('<p class="vacio" style="display: inline-block;text-align: center;width: 100%;margin: 25px 10px;">Aún no has guardado ningún anime.</p>');
+				}
+				}
+			
+	
+			
+			     },
+			     error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			}
+
+			}
+			//Actualizar preferencias
+			function guardados_inicio_preferencias() {
+			$('select.preferencias_inicio').on('change', function() {
+			pagina = 1;
+			$('.guardado_item').remove();
+			var new_initval = $(this).val();
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/preferencias",
+			    data: {inicio: new_initval},
+			    success:function(data){ 
+			    //console.log(data);
+			    guardados_inicio();
+			     },
+			     error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+				});
+			}
+			
+			//Marcar un anime
+			function marcar_animes() {
+			$(document).on('click', function(event) {
+ 			 if (!$(event.target).closest('#mark_as').length && !$(event.target).closest('.dropmenu').length) {
+				$('.dropmenu').html('');
+			  }
+			});
+			$('strong#mark_as').click(function() {
+			$(this).find('.dropmenu').html('<ul><li><a data-drop="0" href="#"><i class="ti ti-playlist-x" aria-hidden="true"></i> Desmarcar</a></li><li><li><a data-drop="1" href="#"><i class="ti ti-eye" aria-hidden="true"></i> Mirando</a></li><li><a data-drop="2" href="#"><i class="ti ti-circle-check" aria-hidden="true"></i> Visto</a></li><li><a data-drop="3" href="#"><i class="ti ti-player-pause" aria-hidden="true"></i> Por ver</a></li><li><a data-drop="4" href="#"><i class="ti ti-heart" aria-hidden="true"></i> Favorito</a></li><li><a data-drop="5" href="#"><i class="ti ti-thumb-down" aria-hidden="true"></i> Dropped</a></li></ul>');
+			$('.dropmenu li a').click(function(e) {
+			e.preventDefault();
+			$(this).parent().parent().parent().parent().find('i#mark_active').attr('class', $(this).find('i').attr('class'));
+			
+			
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/marcar_anime",
+			    data: {tag: $(this).attr('data-drop'), id: $(this).parent().parent().parent().parent().attr('data-mark')},
+			    success:function(data){ 
+			    console.log(data);
+
+			
+			     },
+			     error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			});
+			});
+
+
+			}
+			
+
+			
+
+			
+			function editar_pass_form() {
+				//Ajax login
+				$( ".actualizar_pass" ).submit(function( e ) {
+
+					$('.actualizar_pass button').attr('disabled', true);
+					var formData = new FormData(this);
+					$.ajax({
+						type:"POST",
+						url:authdomain+"/api/update_pass",
+						data: formData,
+						success:function(data){
+							console.log(data);
+							var r = jparse(data);
+							if(r.error) {
+
+							$('.actualizar_pass').before('<div class="alert errmsj alert-danger" role="alert">'+r.msj+'</div>');
+
+							setTimeout(function() {
+								$('.errmsj').remove();
+							}, 2000);
+							$('.actualizar_pass button').attr('disabled', false);
+							} else {
+								$('.actualizar_pass').before('<div class="alert errmsj alert-success" role="alert">'+r.msj+'</div>');
+							setTimeout(function() {
+								location.reload();
+							}, 5000);
+							}
+
+						},
+						error: function(xhr, status, error) {
+							console.log(xhr.responseText);
+							$('.actualizar_pass button').attr('disabled', false);
+						},
+						cache: false,
+						contentType: false,
+						processData: false
+					});
+
+
+					e.preventDefault();
+				});
+			}
+
+			function editar_perfil_form() {
+			//Ajax login
+			$( ".editar_perfil" ).submit(function( e ) {
+
+			$('#pmsj').hide();
+			$('.editar_perfil button').attr('disabled', true);
+			 var formData = new FormData(this);
+			 console.log(formData);
+				$.ajax({
+					type:"POST",
+					url:authdomain+"/api/editar_perfil",
+					data: formData,
+					success:function(data){
+					console.log(data);
+					if(data == "token") { sesion_invalida();}
+					$('.editar_perfil button').attr('disabled', false); 
+					data = jparse(data);
+
+					if(data.reload) {
+						location.reload();
+					}
+
+					if(data.msj == "reload") {
+					location.reload();
+					} else {
+					$('#pmsj').text(data.msj);
+					$('#pmsj').show();
+					}
+
+					$(window).scrollTop($('#pmsj').offset().top-100);
+
+
+					if(data.error) {
+					$('#pmsj').attr('class','error');
+					} else {
+					$('#pmsj').attr('class','info');
+					}
+					
+					$('#pmsj').click(function() {$(this).hide();});
+					
+					},
+					error: function(xhr, status, error) {
+					console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+					},
+					cache: false,
+					contentType: false,
+					processData: false
+					});
+						
+			  
+			  e.preventDefault();
+			});
+			}
+			
+			function editar_perfil(){
+			
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/usuario",
+			   data: {api_token: api_token},
+			    success:function(data){ 
+				if(data == "token") { sesion_invalida();}
+				
+				$('#loader').remove();
+				if(data.update_pass == 1) {
+					 $('.actualizar_pass').show();
+					 editar_pass_form();
+				} else {
+
+					$('.editar_perfil').show();
+
+					editar_perfil_form();
+					console.log(data);
+					//Info usuario
+					$('#inombre').val(data.usuario);
+					if(data.user_changes > 1) {
+						$('#inombre').attr('disabled', true);
+					}
+					$('#iemail').val(data.email);
+					$('#islogan').val(data.slogan);
+					$('#privacidad').val(data.privacidad_perfil);
+
+					if(data.discord_id !== null) {
+						$('.discord-button').remove();
+						$('.discordsync').append('Cuenta sincronizada.');
+					}
+
+
+					$('#privacidad_perfil_mirando').val(data.priv_mirando);
+					$('#privacidad_perfil_visto').val(data.priv_visto);
+					$('#privacidad_perfil_pendiente').val(data.priv_pendiente);
+					$('#cargar_imagenes').val(data.cargar_imagenes == null ? 0 : data.cargar_imagenes);
+
+					$('#aceptar_amigos').val(data.aceptar_amigos == 1 ? data.aceptar_amigos : 0);
+					$('#privacidad_comentarios').val(data.priv_comentarios);
+					$('#social').val(data.social);
+					$('#web').val(data.web);
+					$('#red').val(data.red);
+
+
+					$('select').niceSelect('update');
+
+					if(onValidUsername(data.usuario) == false) {
+						msj("Nombre de usuario incorrecto",'Tu nombre de usuario tiene un formato incorrecto, esto puede ocasionar problemas al iniciar sesión o al ver tu perfil. Por favor actualizalo.');
+						$('div#modal-c > h3').show();
+					}
+
+				}
+
+
+			     },
+			      error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			
+			}
+		
+		
+			function agregar_amigo() {
+			var current_perfil = $('.row[data-user]').attr('data-user');
+			$('.addfriend').click(function() {
+			var btn = $(this);
+			btn.attr('disabled', true);
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/usuario/"+current_perfil+"/add",
+			   data: {api_token: api_token},
+			    success:function(data){ 
+			    btn.attr('disabled', false);
+			   	console.log(data);
+					btn.text(data.text);
+					btn.attr('data-status', data.status);
+					btn.removeClass('btn-primary');
+					btn.removeClass('btn-danger');
+					btn.addClass("btn-"+(data.status == 0 ? "primary" : "danger"));
+					},
+			      error: function(xhr, status, error) {
+			      btn.attr('disabled', false);
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			
+			});
+			
+			}
+			
+			function obtener_perfil(){
+			var current_perfil = $('.row[data-user]').attr('data-user');
+
+
+			//Historial vistos
+			if($('.perfil_default').length) {
+			if($('.row[data-user]').length) {
+			comentarios_perfil();
+			if($('.row[data-my-profile]').attr('data-my-profile') == 'true') {obtener_vistos();} else {$('.perfil-title h4').text("Mirando");animes_perfil(1, 6);}
+			} 
+			
+			
+			}
+			
+			if($('.row[data-my-profile]').attr('data-my-profile') == 'false') {
+			agregar_amigo();
+			}
+
+
+			
+			}
+			window.obtener_perfil = obtener_perfil;
+
+			
+			function guardar_capitulo(info = false, id = false, anime = false) {
+
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/guardar_capitulo",
+			   data: {ainfo: info, id: id, anime: anime, api_token: api_token},
+			    success:function(data){ 
+				if(data == "token") { sesion_invalida();}
+			     },
+			      error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			}
+			
+		function guardar_visto(anime = false, title = false, cap = false, thumb = false) {
+
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/guardar_visto",
+			   data: {title: title, anime: anime, cap: cap, thumb: thumb},
+			    success:function(data){ 
+				if(data == "token") { sesion_invalida();}
+			     },
+			      error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			}
+			
+
+			
+			function obtener_capitulos() {
+			
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/capitulos",
+			    data: {api_token: api_token},
+			    success:function(data){ 
+				if(data == "token") { sesion_invalida();}
+				var capitulos = data;
+
+				if(Object.keys(capitulos).length > 0) {
+				$('#loader').remove();
+				$('p.vacio.msj').show();
+				$('#guardado_div p').remove();
+					
+
+			         var cap_info;
+			         
+				 $.each(capitulos, function(index, r) {
+
+					 var tmp = '<div class="mb-4 d-flex align-items-stretch mb-3 dir1"><div class="card ml-2 mr-2"><a href="'+r['info']['url']+'"><div class="d-thumb"><img class="card-img-top" src="'+cdndomain+r['info']['thumb']+'" alt="'+r['info']['title']+'"><div class="badges badges-top"><span class="badge TV badge-primary">'+r['info']['tipo']+'</span></div></div></a></div><div class="clr"><h5 class="strlimit card-title t-dark">'+r['info']['title']+'</h5><ul class="child_caps">%child%</ul></div></div>';
+
+					 var childs = "";
+
+					 $.each(r.caps, function(ic, rc) {
+						cap_info = jparse(rc['info'])[0];
+						childs += '<li><a href="'+cap_info['url']+'">Episodio '+cap_info['title'].replace(r['info']['title'],'').split('Sub')[0]+' <time>'+cap_info['date']+'</time></a></li>';
+
+					 });
+
+
+					 $('#guardado_div').append(tmp.replace(/%child%/g, childs));
+				 });
+			
+			$('#guardado_div').addClass('row');
+			msj_borrar();
+				 } else {
+				$('#loader').remove(); $('#guardado_div p').show();
+				 }
+	
+			
+			     },
+			     error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			}
+			
+			var orden = "none";
+			var orden_tipo = "none";
+			var filtro = "none";
+			var tag = "none";
+			var estado_fill = "none";
+
+
+			function obtener_animes(callback = false, todo = false) {
+			if(todo) {pagina = todo;}
+
+			console.log("Obteniendo animes..");
+			var start = new Date().getTime();
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/animes?orden="+orden+"&tag="+tag+"&tipo="+orden_tipo+"&filtro="+filtro+"&estado="+estado_fill+"&p="+pagina,
+			    data: {api_token: api_token},
+			    success:function(data){ 
+			    var end = new Date().getTime();
+				console.log("Loading: ");
+				console.log(end - start );
+			    console.log(data);
+			    	pagina++;
+				if(data == "token") { sesion_invalida();}
+				//CARGAR MAS
+				if(data.last_page >= pagina) {
+				$("#loadmore").show();$("#loadmore").removeClass("activo");
+				} else {
+				$("#loadmore").hide();
+				}
+				$("#loadmore").removeClass("activo");
+				$("#loadmore").text(loadmoreText);
+				$("#filtrar_guardado").removeClass('activo');
+				//MOSTRAR
+				var animes = data.data;
+				$('.res_t').text("("+data.total+(data.total == 1 ? " resultado" : " resultados")+")");
+
+				if(animes.length > 0) {
+				$('#loader').remove();
+				$('p.vacio.msj').show();
+				$('#guardado_div p').remove();
+					
+
+			         var anime_info;
+			         
+				 for(var i=0;i<animes.length;i++) {
+				 anime_info = jparse(animes[i]['info']);
+			if(anime_info.synopsis.length > 149) { anime_info.synopsis = anime_info.synopsis + "...";}
+			
+
+			let tmptag;
+			switch (animes[i].tag) {
+				case null:
+				    tmptag = "ti ti-playlist-x";
+				    break;
+				case 1:
+				    tmptag = "ti ti-eye";
+				    break;
+				case 2:
+				    tmptag = "ti ti-circle-check";
+				    break;  
+				case 3:
+				    tmptag = "ti-player-pause";
+					break;
+				case 4:
+					tmptag = "ti-heart";
+				    break;
+				case 5:
+					tmptag = "ti ti-thumb-down";
+				    break;
+				}
+
+		var formattedDate = new Date(animes[i]['created_at']).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
+
+			$('#guardado_div').append(gtemplate.replace(/%url%/g, anime_info.url).replace(/%title%/g, anime_info.title).replace(/%img%/g, cdndomain+anime_info.thumb).replace(/%num%/g, i+1).replace(/%icon%/g, tmptag).replace(/%id%/g, animes[i].anime_id).replace(/%synopsis%/g, anime_info.synopsis).replace(/%tipo%/g, anime_info.tipo).replace(/%time%/g, formattedDate
+
+			)
+
+
+			);
+			}
+			
+			$('#guardado_div').addClass('row');
+			msj_borrar();
+			marcar_animes();
+			if(callback) {callback();}
+				 } else {
+				 if(orden !== 'none' || filtro !== 'none' || orden_tipo !== 'none' || estado_fill !== 'none') {
+				 $('#guardado_div').html(vacio_filtro);
+				 }
+				$('#loader').remove(); $('#guardado_div p').show();
+				 }
+	
+			
+			     },
+			     error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			}
+			
+
+			function obtener_trailers() {
+			var perfil_div = $('.trailer_results').length > 0 ? $('.trailer_results') : $('#perfil_div');
+			perfil_div.find('#loader').show();
+
+			if($('.trailer_results').length > 0) {
+			$('.res_total').text('');
+			}
+
+				$.ajax({
+					type:"POST",
+		   url: location.href,
+		   data: {"_token": token, paginate: pagina,user: ($('div[data-user]').length ? $('div[data-user]').data('user') : usr_info.usuario),filtro: $('.trailers_nav li.active').attr('data-val')},
+
+					   success:function(data){
+					   console.log(data);
+
+
+					   perfil_div.find('#loader').hide();
+
+					//CARGAR MAS
+				if(data.current_page < data.last_page) {
+				$("#loadmore").show();$("#loadmore").removeClass("activo");
+				} else {
+				$("#loadmore").hide();
+				}
+				$("#loadmore").removeClass("activo");
+				$("#loadmore").text(loadmoreText);
+
+
+					   if($('.trailer_results').length > 0) {
+					   $('#loader').remove();
+					   $('.res_total').text(data.total+' trailers');
+					   }
+
+					   //Paginacion
+					   if(parseInt(data.last_page) > 1) {
+						generarPaginacion(data.last_page, function(p) {
+						pagina = p;
+						perfil_div.html(loadingDots);
+						$('html, body').animate({
+							scrollTop: $(perfil_div).offset().top - 80
+						}, 800);
+						obtener_trailers();
+						});
+
+					}
+
+							if(!$('.ajax-paginator').is(':visible')) {pagina++;}
+
+
+							$('a[data-tipo="trailers"]').text(loadmoreText);
+							if(data.data.length == 0) {
+							$('a[data-tipo="trailers"]').hide();
+							} else {
+
+
+					for(var i=0;i<data.data.length;i++) {
+
+
+				if($('.trailer_results').length > 0) {
+				perfil_div.append('<div class="col-lg-3 col-md-3 mb-4"><div class="trailer_item"><a href="/'+data.data[i]['slug']+'"><div class="trailer_item_pic set-bg" data-setbg="https://img.youtube.com/vi/'+data.data[i]['trailer']['url']+'/mqdefault.jpg" style="background-image: url(&quot;https://img.youtube.com/vi/'+data.data[i]['trailer']['url']+'/mqdefault.jpg&quot;);"></div></a><div class="anime__item__text"><ul><li>'+data.data[i]['status']+'</li> <li class="anime"> '+data.data[i]['type']+'</li></ul><h5><a href="/'+data.data[i]['slug']+'">'+data.data[i]['title']+'</a></h5></div></div></div>');
+				} else {
+				//En perfil
+				perfil_div.append('<div class="col-4 col-md-2-4 col-lg-2 mb-3 px-2" ><a href="/'+data.data[i]['slug']+'" title="'+data.data[i]['title']+'/"><div class="fav-card"><span class="badge-fav">'+data.data[i]['type']+'</span><img src="https://img.youtube.com/vi/'+data.data[i]['trailer']['url']+'/mqdefault.jpg" class="fav-img" alt="'+data.data[i]['title']+'"><div class="fav-overlay"><p class="fav-title">'+data.data[i]['title']+'</p></div></div></a></div>');
+				}
+								}
+
+							}
+
+
+
+					   },
+		   error: function(xhr, status, error) {
+			   console.log(xhr.responseText);
+		   },
+		   dataType: "json"
+				});
+
+			}
+
+			window.obtener_trailers = obtener_trailers;
+
+
+			function listas_perfil(page = false) {
+			console.log("Obtiene listas");
+				$.ajax({
+					type:"POST",
+		   url:authdomain+"/api/listas/"+$('div[data-user]').attr('data-user'),
+		   data: {api_token: api_token},
+					   success:function(data){
+						   console.log(data);
+						   console.log("Obtiene datos listas");
+						   if(page) { $('#perfil_div').html('<div class="lds"></div>'); } else {$('.listas_loader').remove();}
+						   $('#listas_perfil').show();
+
+						   if(data.length > 0) {
+							   for(var i=0;i<data.length;i++) {
+
+								   $(page ? '#perfil_div .lds' : '#listas_perfil').append('<li><a href="/playlist/'+data[i].slug+'"><i class="ti ti-list-numbers" aria-hidden="true"></i> <span>'+data[i].nombre+'<time>'+data[i].created_at+'</time></span></li></a>');
+							   }
+						   } else {
+							   $(page ? '#perfil_div .lds' : '#listas_perfil').html('<p class="vacio" style="display: inline-block;width: 100%;margin: 25px 15px;">No se encontró listas.</p>')
+						}
+
+
+					   },
+		   error: function(xhr, status, error) {
+			   console.log(xhr.responseText);
+		   },
+		   dataType: "json"
+				});
+
+			}
+
+
+
+			window.listas_perfil = listas_perfil;
+
+			function obtener_estudios() {
+
+				$.ajax({
+					type:"GET",
+					url:authdomain+"/api/user_studios",
+					   success:function(data){
+						   var ids = data;
+
+						   $.ajax({
+							   type:"POST",
+							   url: location.href,
+							   data: {"_token": token,"ids": ids},
+
+								  success:function(data){
+
+									  $('.studios_page').html('');
+
+									  for(var i=0;i<data.length;i++) {
+
+										  $('.studios_page').append('<div class="col-lg-3 col-md-6 col-sm-6"><div class="anime__item"><a  href="'+data[i].url+'"><div class="anime__item__pic set-bg" data-setbg="'+data[i].imagen+'" style="background-image: url(&quot;'+data[i].imagen+'&quot;);"></div></a><h5 class="d-block text-center mt-2"><a href="'+data[i].url+'">'+data[i].nombre+'</a></h5></div></div>');
+									  }
+
+								  },
+								  error: function(xhr, status, error) {
+									  console.log(xhr.responseText);
+								  },
+								  dataType: "json"
+						   });
+
+					   },
+					   error: function(xhr, status, error) {
+						   console.log(xhr.responseText);
+					   },
+				});
+
+
+
+			}
+
+
+
+$('.trailers_nav li').click(function() {
+pagina = 1;
+$('.trailers_nav li').removeClass('active');
+$(this).addClass('active');
+$('.trailer_results').html(loader);
+obtener_trailers();
+});
+
+			function amigos_perfil() {
+			var amigos_template = '<div class="col-12 col-md-6 col-lg-4 mb-2"><div class="card friend-card"><div class="card-body d-flex align-items-center"><img src="%thumb%" alt="Foto de perfil" class="profile-img me-3"><div class="flex-grow-1"><h5 class="friend-name mb-0">%nombre%</h5><a href="%url%" class="friend-link">Ver perfil</a></div></div></div></div>';
+			
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/amigos?p="+pagina,
+			    data: {user: $('div[data-user]').attr('data-user'), api_token: api_token},
+			    success:function(data){ 
+					console.log(data);
+					console.log(pagina);
+
+				if(data == "token") { sesion_invalida();}
+				//CARGAR MAS
+
+				if(data.current_page < data.last_page) {
+				$("#loadmore").show();$("#loadmore").removeClass("activo");
+				} else {
+				$("#loadmore").hide();
+				}
+				$("#loadmore").removeClass("activo");
+				$("#loadmore").text(loadmoreText);
+
+				//Paginacion
+				if(parseInt(data.last_page) > 1) {
+
+						generarPaginacion(data.last_page, function(p) {
+						pagina = p;
+						$('#perfil_div').html(loadingDots);
+						$('html, body').animate({
+							scrollTop: $('#perfil_div').offset().top - 80
+						}, 800);
+						amigos_perfil() ;
+						});
+
+					}
+
+					if(!$('.ajax-paginator').is(':visible')) {pagina++;}
+
+				//MOSTRAR
+				var amigos = data.data;
+				var cap_info;
+				$('#perfil_div #loader').remove();
+				
+				if(amigos.length > 0) {
+				 for(var i=0;i<amigos.length;i++) {
+				 var thumb = amigos[i].img;
+				 
+				$('#perfil_div').append( amigos_template.replace(/%thumb%/g, thumb).replace(/%nombre%/g, amigos[i].usuario).replace(/%url%/g, amigos[i].url) );
+				}
+				 } else {
+				$('#perfil_div').html(vacio_msj);
+				 }
+	
+			
+			     },
+			     error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			}
+			window.amigos_perfil = amigos_perfil;
+
+
+			
+
+			function comentarios_perfil() {
+				var comentarios_template = '<li><a href="%url%"><div>%title% <time>%fecha%</time></div><div class="body">%comentario%</div></a></li>';
+				$('.comentarios_loader').show();
+
+				$.ajax({
+					type:"POST",
+					url:authdomain+"/api/comentarios_recientes/"+$('div[data-user]').attr('data-user'),
+					success:function(data){
+						console.log("COMENTARIOS PERFIL");
+						console.log(data);
+
+						$('.comentarios_loader').hide();
+
+						if(data.error) {
+							$('#comentarios_perfil').html('<p class="p-3">'+data.error+'</p>');
+						} else {
+						//MOSTRAR
+						var comentarios = data.data;
+						var cap_info;
+
+						if(comentarios.length > 0) {
+							for(var i=0;i<comentarios.length;i++) {
+								$('#comentarios_perfil').append(comentarios_template.replace(/%url%/g, comentarios[i].url).replace(/%title%/g, comentarios[i].titulo).replace(/%fecha%/g, comentarios[i].fecha).replace(/%comentario%/g, comentarios[i].body));
+							}
+						} else {
+							$('#comentarios_perfil').html(vacio_msj);
+						}
+					}
+
+					},
+					error: function(xhr, status, error) {
+						console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+					},
+					dataType: "json"
+				});
+
+			}
+
+			function obtener_vistos() {
+			var vistos_template = '<div class="col-4 col-md-2-4 col-lg-2 mb-3 px-2" ><a href="/%slug%/%numero%/" title="%nombre%"><div class="fav-card"><span class="badge-fav">Cap %numero%</span><img src="%thumb%" class="fav-img" alt="%nombre%"><div class="fav-overlay"><p class="fav-title">%nombre%</p></div></div></a></div>';
+
+			//var vistos_template = '<div class="guardado_item col-lg-3 col-md-6 col-sm-6 col-6"><div class="anime__item"><a href="/%slug%/%numero%/" title="%nombre%"><div class="anime__item__pic homemini set-bg" style="background-image: url(&quot;%thumb%&quot;);"><div class="anime__item__text"><ul><li>Capítulo %numero%</li></ul></div></div></a><div class="anime__item__text tituloblanco"><h5><a href="/%slug%/%numero%/">%nombre%</a></h5></div></div></div>';
+			
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/historial_visto?p="+pagina,
+			    data: {api_token: api_token},
+			    success:function(data){ 
+			    //console.log(data);
+				pagina++;
+				if(data == "token") { sesion_invalida();}
+				//CARGAR MAS
+				if(data.last_page >= pagina) {
+				$("#loadmore").show();$("#loadmore").removeClass("activo");
+				} else {
+				$("#loadmore").hide();
+				}
+				$("#loadmore").removeClass("activo");
+				$("#loadmore").text(loadmoreText);
+				//MOSTRAR
+				var animes = data.data;
+				var cap_info;
+				$('#perfil_div #loader').remove();
+				
+				if(animes.length > 0) {
+				 for(var i=0;i<animes.length;i++) {
+				 var anime_thumb = animes[i].thumb ? cdndomain+ "/assets/images/animes/video/image_thumb/" + animes[i].thumb : cdndomain + "/assets/images/animes/image/"+ animes[i].anime+".jpg";
+				$('#perfil_div').append(vistos_template.replace(/%slug%/g, animes[i].anime).replace(/%nombre%/g, (animes[i].titulo == null ? animes[i].anime.replace('-', ' ') : animes[i].titulo)).replace(/%thumb%/g, anime_thumb).replace(/%numero%/g, animes[i].numero));
+				}
+				 } else {
+				$('#guardado_div').html(vacio_msj);
+				 }
+	
+			
+			     },
+			     error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			}
+			
+			var default_tag = false;
+			function animes_perfil(tag = false, mostrar = false) {
+			if(tag) {default_tag = tag;}
+
+			var animes_perfil_template = '<div class="col-4 col-md-2-4 col-lg-2 mb-3 px-2" ><a href="%url%"><div class="fav-card"><span class="badge-fav">%tipo%</span><img src="%img%" class="fav-img" alt="Solo Leveling"><div class="fav-overlay"><p class="fav-title">%title%</p></div></div></a></div>';
+
+			//var animes_perfil_template = '<div class="col-lg-3 col-sm-6 gdan"><div class="anime__item"><a href="%url%"><div class="anime__item__pic set-bg" data-setbg="%img%" style="background-image: url(&quot;%img%&quot;);"></div></a></div><div class="anime__item__text"><ul><li class="anime">%tipo%</li> <li>%time%</li></ul><h5><a href="%url%">%title%</a></h5></div></div>';
+
+			var current_perfil = $('.row[data-user]').attr('data-user');
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/animes?tag="+default_tag+"&orden=none&filtro=fecha&p="+pagina+(mostrar ? '&mostrar='+mostrar : ''),
+				data: {user: current_perfil},
+			    success:function(data){ 
+			    console.log(data);
+
+				if(data == "token") { sesion_invalida();}
+				//CARGAR MAS
+				if(data.current_page < data.last_page) {
+				$("#loadmore").show();$("#loadmore").removeClass("activo");
+				} else {
+				$("#loadmore").hide();
+				}
+				$("#loadmore").removeClass("activo");
+				$("#loadmore").text(loadmoreText);
+
+				//Paginacion
+				if(parseInt(data.last_page) > 1) {
+
+						generarPaginacion(data.last_page, function(p) {
+						pagina = p;
+						$('#perfil_div').html(loadingDots);
+						$('html, body').animate({
+							scrollTop: $('#perfil_div').offset().top - 80
+						}, 800);
+						animes_perfil(tag, mostrar) ;
+						});
+
+					}
+
+					if(!$('.ajax-paginator').is(':visible')) {pagina++;}
+
+				//MOSTRAR
+				var animes = data.data;
+				var cap_info;
+				$('#perfil_div #loader').remove();
+				
+				if(animes.length > 0) {
+				
+				
+				 var anime_info;
+			         
+				 for(var i=0;i<animes.length;i++) {
+				 anime_info = jparse(animes[i]['info']);
+			if(anime_info.synopsis.length > 149) { anime_info.synopsis = anime_info.synopsis + "...";}
+
+
+			var formattedDate = new Date(animes[i]['created_at']).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
+
+			$('#perfil_div').append(animes_perfil_template.replace(/%url%/g, anime_info.url).replace(/%title%/g, anime_info.title).replace(/%img%/g, cdndomain+anime_info.thumb).replace(/%num%/g, i+1).replace(/%id%/g, animes[i].anime_id).replace(/%synopsis%/g, anime_info.synopsis).replace(/%tipo%/g, anime_info.tipo).replace(/%time%/g,
+																																																											formattedDate
+
+			)
+									);
+			}
+			
+			
+			
+				 } else {
+					if(data.error !== undefined) {$('#perfil_div').html(error_msj(data.error));} else {
+						$('#perfil_div').html(vacio_msj);
+
+					}
+				 }
+	
+			
+			     },
+			     error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			}
+			
+			function borrar_marcador(cap = false){
+			
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/eliminar_capitulo",
+			   data: {id: cap, api_token: api_token},
+			    success:function(data){ 
+			    console.log(data);
+				if(data == "token") { sesion_invalida();}
+			     },
+			      error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			}
+			
+			function borrar_guardado(anime = false){
+			
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/eliminar_anime",
+			   data: {id: anime, api_token: api_token},
+			    success:function(data){ 
+				if(data == "token") { sesion_invalida();}
+			     },
+			      error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			}
+			
+			function es_marcador(anime = false){
+			if(es_usuario()) {
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/es_marcador",
+			   data: {id: anime, api_token: api_token},
+			    success:function(data){ 
+				if(data == "token") { sesion_invalida();}
+			    console.log(data);
+				if(data) {$('#guardar-capitulo').addClass('activo');} else {return false;}
+			     },
+			      error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			}
+			}
+			
+			
+			
+			function solicitudes_pendientes() {
+			var loader = '<div id="loader"><div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div>';
+			$('.usersocial.usol ul').html(loader);
+			
+			$.ajax({
+			    type:"POST",
+					url:authdomain+"/api/solicitudes",
+					data: {api_token: api_token},
+			    success:function(data){ 
+					if(data == "token") { sesion_invalida();}
+			    console.log(data);
+			    $('.usersocial.usol ul').html('');
+					if(data.length == 0) {
+					$('.usol').html('<p>No tienes solicitudes de amistad aún.</p>');
+					} else {
+					$.each(data, function(i, item) {
+					$('.usersocial.usol ul').append("<li><img src='"+item.img+"'/><a href='"+item.url+"'>"+item.usuario+"</a> quiere ser tu amigo.<div class='usolres' data-id='"+item.id+"'><button data-res='0' class='btn btn-danger'>Eliminar</button><button data-res='1' class='btn btn-success'>Aceptar</button></div></li>");
+					});
+					
+					$('.usolres button').click(function() {
+					var t = $(this);
+					var par = t.parent();
+					var sid = par.attr('data-id');
+					var sres = t.attr('data-res');
+					
+					$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/aceptar_solicitud",
+					data: {id: sid, res: sres, api_token: api_token},
+			    success:function(data){ 
+					if(data == "token") { sesion_invalida();}
+					
+					var myToast = $.toast({
+					text : data.msj,
+					icon: data.success ? 'success' : 'error',
+					hideAfter : 4000,
+					bgColor : '#027bff',
+					textColor : '#fff', 
+					loaderBg: '#ff9d00',  
+					position: {
+							right: "10%",
+							top: "85px",
+					},
+					});
+					
+					if(data.success) {
+					par.remove();
+					} else {
+					par.parent().remove();
+					}
+					
+
+					$('.jq-toast-wrap').css('position', 'absolute');
+					
+					
+					},
+					error: function(xhr, status, error) {
+					console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+					},
+			     dataType: "json"
+					});
+			
+					});
+					
+					}
+			     },
+			      error: function(xhr, status, error) {
+						console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+						},
+			     dataType: "json"
+			});
+			
+			}
+			
+
+								
+			function es_visto(anime = false, numero = false){
+			if(es_usuario()) {
+			$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/es_visto",
+				data: {anime: anime, api_token: api_token},
+			    success:function(data){ 
+				if(data == "token") { sesion_invalida();}
+				if(data >= numero) {$('#marcar_visto').addClass('activo');} else {return false;}
+				},
+				error: function(xhr, status, error) {
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			}
+			}
+			
+			//Es visto CAPITULO
+			if($('#marcar_visto').length) {
+			es_visto($('#marcar_visto').attr('data-anime'), $('#marcar_visto').attr('data-numero'));
+			$('#marcar_visto').click(function() {
+			if(es_usuario()) {
+			if($(this).hasClass('activo')) {$(this).removeClass('activo');} else {$(this).addClass('activo');}
+			guardar_visto($('#marcar_visto').attr('data-anime'),$('#marcar_visto').attr('data-title'), $('#marcar_visto').attr('data-numero'), $('meta[property="og:image"]').attr('content').split(/(\\|\/)/g).pop());
+			} else {
+			msj_registro($('#marcar_visto'));
+			}
+			
+			});			
+			}
+			
+			//Es visto CAPITULO
+			if($('.anisabi_player').length) {
+
+			$.ajax({
+			type:"POST",
+			xhrFields: {
+			withCredentials: false
+			},
+			url:"https://anisabi.com/api/sync/"+$('.anisabi_player').attr('data-id'),
+			success:function(data){ 
+
+var shortTitle = data.tracks[0].titulo;
+shortTitle = shortTitle.replace($('.anime_info h3').text()+' - ','')
+
+$('.anisabi_player').html('<div class="sabiplayer paused"><div class="progress-bar"><div class="runner"></div></div><div class="album-art"><a target="_blank" href="'+data.tracks[0].full_url+'"><div class="cover" style="background: url('+data.tracks[0].imagen+');"></div></a></div><div class="description"><div class="title"><a target="_blank" title="'+data.tracks[0].titulo+'" href="'+data.tracks[0].full_url+'">'+shortTitle+'</a></div><div class="sub-title"><a target="_blank" href="'+data.anime.url+'" class="sabilink">Más tracks en anisabi</a></div></div><div class="visualizer"><div></div><div></div><div></div></div><div class="play-button"><div class="lp-background"></div><i class="ti ti-player-play"></i><i class="ti ti-player-pause"></i></div><div class="time-indicator"><i class="mdi mdi-clock"></i><span class="time">'+data.tracks[0].duracion+'</span></div></div>');
+
+var $visualizers = $(".sabiplayer .visualizer>div");
+var $progressBar = $(".sabiplayer .progress-bar");
+var $progressBarRunner = $progressBar.find(".runner");
+var percentage = 0;
+var duration = data.tracks[0].duracion;
+var $time = $(".sabiplayer .time");
+var $player = $(".sabiplayer");
+var sabisrc = data.tracks[0].url;
+var playRunner = null;
+
+function secondsToHms(seconds) {
+
+  let d = Number(seconds);
+
+  if(d <= 0){
+     return '00:00'
+  }else{
+    let h = Math.floor(d / 3600);
+    let m = Math.floor(d % 3600 / 60);
+    let s = Math.floor(d % 3600 % 60);
+
+    let mDisplay = m <= 9 ? '0'+ m+':' : m+ ":";
+    let sDisplay = s <= 9 ? '0'+ s : s;
+
+
+    return mDisplay + sDisplay; 
+
+}
+}
+
+function go(t) {
+	console.log(t);
+  playRunner = setInterval(function (t) {
+
+    //visualizers
+    $visualizers.each(function () {
+      $(this).css("height", Math.random() * 90 + 10 + "%");
+    });
+
+    //progress bar
+    percentage = 100/sabi.duration;
+    percentage = parseInt(sabi.currentTime*percentage);
+    if (percentage > 100) percentage = 0;
+    $progressBarRunner.css("width", percentage + "%");
+
+    $time.text(secondsToHms(sabi.currentTime)+"/"+duration);
+  }, 200);
+}
+
+var sabi = document.createElement('audio');
+sabi.src = sabisrc;
+
+
+  
+$(".play-button").on("click", function () {
+
+console.log(sabi);
+
+$player.toggleClass("paused").toggleClass("playing");
+
+if($(".sabiplayer").hasClass('playing')) {
+sabi.play();
+} else {
+sabi.pause();
+}
+  
+  if (playRunner) {
+    clearInterval(playRunner);
+    playRunner = null;
+    $time.text(duration);	
+  } else {
+  percentage = 0;
+  go(sabi.duration);
+  }
+  
+});
+
+$(".sabiplayer .progress-bar").on("click", function (e) {
+  var posY = $(this).offset().left;
+  var clickY = e.pageX - posY;
+  var width = $(this).width();
+	var perc = sabi.duration/100;
+	
+  percentage = (clickY / width) * 100;
+	
+	sabi.currentTime = perc*percentage
+});
+
+
+
+clearInterval(playRunner);
+
+			},
+			error: function(xhr, status, error) {
+			console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+			},
+			dataType: "json"
+			});
+
+			}
+			
+			//Es visto CAPITULO
+			if($('.page_directorio').length) {
+			if(es_usuario()) {es_guardado_directorio();}
+			}
+			if($('.page_horario').length) {
+			if(es_usuario()) {es_guardado_directorio();}
+			}
+			//Solicitudes
+			if($('.page_solicitudes').length) {
+			solicitudes_pendientes();
+			}
+			
+			//Guardar CAPITULO
+			if($('#guardar-capitulo').length) {
+			es_marcador($('#guardar-capitulo').attr('data-capitulo'));
+			$('#guardar-capitulo').click(function() {
+			if(es_usuario()) {
+			
+			var gtitle = $('meta[property="og:title"]').attr('content');
+			var gthumb = $('meta[property="og:image"]').attr('content').replace(cdndomain, '');
+			var gdesc = '';//$('.vidinfo p').html().substring(0,109);
+			var gurl = location.pathname;
+			var gdate = new Date().toLocaleString();
+			var ginfo = [{ title : gtitle,thumb: gthumb, synopsis: gdesc,url: gurl,date: gdate}];		
+			
+			if($(this).hasClass('activo')) {
+			$(this).removeClass('activo');
+			} else {
+			$(this).addClass('activo');
+			}
+			
+			guardar_capitulo(JSON.stringify(ginfo), $(this).attr('data-capitulo'), $(this).attr('data-anime'));
+			
+			} else {
+			msj_registro($('#guardar-capitulo'));
+			}
+			});
+			
+			if(cacheLocal.getItem('guardado') !== null) {
+			if(cacheLocal.getItem('guardado').indexOf(location.pathname) > 0) {
+			$('#guardar').addClass('activo');
+			}
+			}
+			}
+			
+			//Guardar ANIME
+			guardar_anime_btn();
+			
+			//Recibir notificación
+			if($('button[data-notificar]').length) {
+				recibir_notificacion_anime_btn();
+			}
+
+			//Mostrar guardados 
+			if($('#guardado_div').length) {
+			var tipo_mostrar = $('#guardado_div').attr('data-tipo');
+			
+			if(tipo_mostrar == "capitulos") {
+			var gtemplate = '<div class="list"><div id="conb"><strong data-tipo="capitulo" id="del" data-borrar="%id%"><i class="ti ti-x" aria-hidden="true"></i></strong><a class="timg" title="%title%" href="%url%" rel="nofollow"><img src="%img%"></a><div id="animinfo"><h2 class="portada-title">#%num% <a href="%url%" rel="bookmark">%title%</a></h2><span class="title">%time%</span><p>%synopsis%</p></div></div></div>';
+			} else {
+
+			
+			var gtemplate = '<div class="col-lg-2 col-md-6 col-sm-6 gdan"><div class="anime__item"><strong id="del" data-tipo="anime" data-borrar="%id%"><i class="ti ti-x" aria-hidden="true"></i></strong><a href="%url%"><div class="anime__item__pic set-bg" data-setbg="%img%" style="background-image: url(&quot;%img%&quot;);"></div></a></div><div class="anime__item__text"><strong id="mark_as" data-status="%icon%" data-mark="%id%"><i id="mark_active" class="ti %icon%" aria-hidden="true"></i><div rel="%id%" class="dropmenu"/></strong><ul><li class="anime">%tipo%</li> <li>%time%</li></ul><h5><a href="%url%">%title%</a></h5></div></div>';
+			}
+			
+			
+			
+
+			if(tipo_mostrar == "capitulos") {
+			validar_usuario();
+			obtener_capitulos();
+			}
+			
+
+			if(tipo_mostrar == "animes") {
+			validar_usuario();
+			obtener_animes(function() {
+			tutorial_guardado();
+			});
+
+			}
+			
+			
+			}
+
+			//Editar Perfil
+			if($('.editar_perfil').length) {
+			editar_perfil();
+			}
+			
+
+			//Crear lista
+			if($('.new_playlist').length) {
+			$('.user_token').val(api_token);
+			$('form.api_url').attr('action', authdomain+"/api/crear_playlist");
+			}
+			
+			
+
+
+			function check_owner() {
+				//Notificaciones
+				var notify_key = 'new_notify_'+usr_info.id;
+				var notify_comments_key = 'new_comments_notify_'+usr_info.id;
+				var not = $('.notify-list ul');
+
+				$('.not-type button').click(function() {
+					var total = $("#notify").find('b');
+
+					$('.not-type button.active').removeClass('active');
+					$(this).addClass('active');
+					not.html('<div id="qloader" class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>');
+					//muestra notificaciones
+					if($(this).attr('data-show') == 'global') {
+						var oldn = '';
+						var count = $(this).find('b').text();
+						count = count == '' ? 0 : count;
+
+						if(cacheLocal.getItem(notify_key) != null) {oldn = cacheLocal.getItem(notify_key);}
+						if(count > 0) {
+							if($('button[data-show="comentarios"] b').text == 0) {total.remove();}
+							$.ajax({
+							type:"POST",
+							url:authdomain+"/api/notificaciones",
+							data: {api_token: api_token},
+							success:function(data){
+								var json=data;
+
+								console.log(data);
+								var notlist = "";
+								$("#notify b").remove();
+
+								for(var i=0;json.length>i;i++){
+									notlist+='<li><a href="'+json[i]['url']+'"><img src="'+(json[i]['img'].includes('://') ? json[i]['img'] : cdndomain+json[i]['img'])+'"></span> <b>'+json[i]['msj']+'</b> '+json[i]['accion']+'.<time class="timeago" datetime="'+json[i]['fecha']+'">'+json[i]['fecha']+'</time></a></li>';
+								}
+
+
+								if(notlist.length>0){not.html(notlist);$('.notify-list li').addClass('d');}else{not.html('<p class="qr_nr">No tienes notificaciones nuevas.</p>');}
+
+								if(json.length == 0) {
+									not.html(oldn);
+								}
+
+								if(notlist.length>0){
+								if(cacheLocal.getItem(notify_key)) {
+									if(cacheLocal.getItem(notify_key).length < 5000) {
+										cacheLocal.setItem(notify_key, notlist+oldn);
+									} else {
+										cacheLocal.setItem(notify_key, notlist);
+									}
+								} else {
+									cacheLocal.setItem(notify_key, notlist);
+								}
+								}
+
+								fecha_humana('.notify-list .timeago');
+
+							},
+							error: function(xhr, status, error) {
+								console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+							},
+							dataType: "json"
+						});
+						} else {
+
+							if(oldn.length == 0) {
+								not.html('<p class="qr_nr">No tienes notificaciones nuevas.</p>');
+							} else {
+								not.html(oldn);
+								fecha_humana('.notify-list .timeago');
+							}
+
+						}
+
+					} else {
+
+						var oldnc = '';
+						var count = $(this).find('b').text();
+						count = count == '' ? 0 : count;
+						total.remove();
+
+						if(cacheLocal.getItem(notify_comments_key) != null) {oldnc = cacheLocal.getItem(notify_comments_key);}
+						if(count > 0) {
+
+							$.ajax({
+								type:"POST",
+								url:authdomain+"/api/notificaciones_comentarios",
+								data: {api_token: api_token},
+								success:function(data){
+									var json=data;
+									console.log(data);
+									var notlist = "";
+									$("#notify b").remove();
+
+									for(var i=0;json.length>i;i++){
+										notlist+='<li><a href="'+json[i]['url']+'"><img src="'+(json[i]['img'].includes('://') ? json[i]['img'] : cdndomain+json[i]['img'])+'"></span> '+(json[i]['accion'] == 'like_group' ? json[i]['msj'] : '<b>'+json[i]['msj']+'</b>')+' '+(json[i]['accion'] !== 'like_group' ? json[i]['accion'] : '')+'.<time class="timeago" datetime="'+json[i]['fecha']+'">'+json[i]['fecha']+'</time></a></li>';
+									}
+
+									if(notlist.length>0){not.html(notlist);$('.notify-list li').addClass('d');}else{not.html('<p class="qr_nr">No tienes notificaciones nuevas.</p>');}
+
+
+									if(json.length == 0) {
+										not.html(oldn);
+									}
+
+									if(notlist.length>0){
+									if(cacheLocal.getItem(notify_comments_key)) {
+										if(cacheLocal.getItem(notify_comments_key).length < 5000) {
+											cacheLocal.setItem(notify_comments_key, notlist+oldnc);
+										} else {
+											cacheLocal.setItem(notify_comments_key, notlist);
+										}
+									} else {
+										cacheLocal.setItem(notify_comments_key, notlist);
+									}
+									}
+
+									fecha_humana('.notify-list .timeago');
+
+								},
+								error: function(xhr, status, error) {
+									console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+								},
+								dataType: "json"
+							});
+
+						} else {
+
+							if(oldnc.length == 0) {
+								not.html('<p class="qr_nr">No tienes notificaciones nuevas.</p>');
+							} else {
+								not.html(oldnc);
+								fecha_humana('.notify-list .timeago');
+							}
+
+						}
+
+
+					}
+
+	if(!$('.fullnots').length) {$('.notify-list').append('<a class="fullnots" href="/notificaciones">Ver todas</a>');}
+
+				});
+
+
+
+				$("#notify").on("click", function(e){
+					var count = $(this).find('b').text();
+					var not = $('.notify-list');
+					not.toggle();
+					$('.not-type button:first').click();
+
+
+				});
+
+				if($('.deltrailer').length && es_usuario()) {
+
+					if($('.deltrailer').attr('data-user') == usr_info.usuario) {
+
+						$('.deltrailer').show();
+						$('.deltrailer').click(function() {
+
+							msj('', '<h3>Retirar trailer</h3><p>Puedes retirar el trailer que has aportado: ya sea porque está mal, lo eliminaron o quieres enviar uno mejor! C:</p><form method="post" id="deltrailer_form" action=""><br><input type="submit" name="submit" id="boton" class="btn btn-danger btn-block" value="Retirar"></form>', ['Cancelar']);
+
+							$( "#deltrailer_form" ).submit(function( e ) {
+								$('#deltrailer_form #boton').attr('disabled', true);
+								var formData = {
+									anime: $('#guardar-anime').attr('data-anime'),
+								};
+
+								$.ajax({
+									type:"POST",
+									url:authdomain+"/api/del_trailer",
+									data: formData,
+									success:function(data){
+										location.reload();
+									},
+									error: function(xhr, status, error) {
+										console.log(xhr.responseText);
+									},
+								});
+
+
+								e.preventDefault();
+							});
+
+						});
+
+					}
+				}
+
+			if($('.single_playlist').length) {
+			console.log("Comprueba autor");
+			//Es autor de la playlist
+
+			if($('.single_playlist').attr('data-owner') == usr_info.id) {
+			$('.single_playlist').before('<div class="playlist_buttons"><button class="e btn btn-primary">Editar</button> <button class="b btn btn-danger">Eliminar playlist</button></div>');
+			
+			$('.playlist_buttons button').click(function() {
+			 if($(this).hasClass('e')) {
+				 msj('<i class="icon_error-triangle_alt"></i> Editar lista', '<form method="post" name="editar_lista" id="editar_lista_form" action=""><label for="a">Nombre</label><input type="text" class="form-control" value="'+$('.lin').text()+'" name="nombre"><br><label for="b">Tipo</label><select name="tipo" style="width: 100%" required="" class="notnice form-control"><option '+($('.lin').attr('data-type') == 1 ? 'selected ' : '')+'value="1">Publica (otros usuarios pueden verla)</option><option '+($('.lin').attr('data-type') == 2 ? 'selected ' : '')+'value="2">Privada (solo yo puedo verla)</option></select><br><input type="hidden" name="slug" value="'+location.pathname.split('/playlist/')[1].replace('/','')+'"><input type="submit" name="submit" id="boton" class="btn btn-primary" value="Actualizar"></form>', ['Cancelar']);
+			 
+			 $('#editar_lista_form').submit(function(e) {
+				e.preventDefault();
+				var form = $(this);
+
+				$.ajax({
+						  type: "POST",
+							url:authdomain+"/api/update_playlist",
+						  data: form.serialize(),
+						  success: function(data) {
+							  location.reload();
+						  }
+				});
+			 
+			 });
+
+			 } else {
+if (confirm("¿Desear eliminar esta lista? esto no se puede deshacer.") == true) {
+  				$.ajax({
+						  type: "POST",
+							url:authdomain+"/api/delete_playlist",
+							data: {cid: location.pathname.split('/playlist/')[1].replace('/','')},
+						  success: function(data) {
+						 	location.href = "/dash/listas";
+						  }
+				});
+} 
+			 }
+			});
+			
+			}
+			}
+			}
+			
+			function add_pl() {
+			$('.add-playlist').off('click');
+			$('.add-playlist').click(function(e) {
+			e.preventDefault();
+			
+			if(!es_usuario()) {
+			msj_registro($(this));
+			} else {
+			listas($(this));
+			return false;
+			}
+			});
+			}
+			add_pl();
+			
+			$('.dots-playlist').click(function() {
+			$('.pl-menu').remove();
+			$(this).before('<ul class="pl-menu"><li class="add-playlist">Agregar a mi playlist</li></ul>');
+			add_pl();
+			
+			$('body').click(function(e) {
+			var t = $(e.target);
+			if(!t.closest( "ul" ).hasClass('items_list')) {
+			$('.pl-menu').remove();
+			}
+			});
+			
+			});
+
+
+		if($('.lista_play').length && $('#episodes-content .current').length) {
+		
+		$.ajax({
+							type:"POST",
+							url:authdomain+"/api/playlist_view",
+							data: {cid: location.pathname.split('/playlist/')[1].replace('/',''), v: $('#episodes-content .current').attr('data-id')},
+							success:function(data){
+							
+		console.log(data);
+		
+							 },
+							 error: function(xhr, status, error) {
+							console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+							},
+							 dataType: "json"
+			});
+			
+		}
+		
+//Agregar a lista
+function list_cap() {
+var cid = $('.add-playlist').attr('data-id');
+$(".tmp .checkbox input").change(function() {
+var v = $(this).checked ? 1 : 0;
+var l = $(this).attr('data-id');
+
+$.ajax({
+							type:"POST",
+							url:authdomain+"/api/add_to_playlist",
+							data: {cid: cid, val: v, list: l},
+							success:function(data){ 
+							
+							console.log(data);
+							
+								var myToast = $.toast({
+ 		 text : data == 1 ? 'Se agrego con éxito a tu lista' : 'Se removio de tu lista con exito',
+		icon: 'success',
+ 		 hideAfter : 2000,
+ 		 bgColor : '#027bff',
+		textColor : '#fff', 
+		loaderBg: '#ff9d00',  
+		position: {
+        right: 10,
+        top: 10,
+		},
+		});
+		
+							 },
+							 error: function(xhr, status, error) {
+							console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+							},
+							 dataType: "json"
+			});
+			
+});
+
+}
+
+function msj_list(elem, callback = false) {
+$('body').append('<ul style="position: absolute;" class="drop-lists"><div class="tmp"><p>Obteniendo listas...</p></div></ul>');
+
+var pos = $(elem).offset();
+console.log(pos);
+$('.drop-lists').css('left', parseInt(pos.left+$('#adpl').width())-300 +"px");
+$('.drop-lists').css('top', parseInt(pos.top+50) +"px");
+
+if(callback) {callback();}
+
+$('.drop-lists').append('<button id="new_plist" class="mb-2 mt-2 btn btn-block btn-primary" style="max-width: 80%;margin: auto; ">Crear lista nueva</button>');
+
+$('#new_plist').click(function() {
+$(this).hide();
+$(this).before('<form action="'+authdomain+'/api/crear_playlist" class="api_url" method="post"><input class="mb-3 form-control" name="nombre" required="" placeholder="Nombre...."><select name="tipo" style="width: 100%" required="" class="notnice form-control"><option value="1">Publica</option><option value="2">Privada</option></select><input type="hidden" name="ajax" value="1"><input type="hidden" class="user_token" name="token" value="'+api_token+'"><input class="mt-3 btn btn-primary btn-block" type="submit" value="Crear"></form>');
+
+$('.drop-lists .api_url').submit(function(e) {
+ e.preventDefault();
+var form = $(this);
+var actionUrl = form.attr('action');
+    
+$.ajax({
+        type: "POST",
+        url: actionUrl,
+        data: form.serialize(),
+        success: function(data) {
+         console.log(data);
+         var d = jparse(data);
+         console.log(d);
+         $('.drop-lists .tmp p').remove();
+         $('.drop-lists .tmp').append('<label class="checkbox checkbox-indent"><input data-id="'+d.id+'" type="checkbox"><i class="ti ti-circle-check" aria-hidden="true"></i>'+d.nombre+'<i class="ti '+(d.privacidad == 1 ? '' : 'ti-lock')+'" aria-hidden="true"></i></label>');
+         $('.drop-lists form').remove();$('#new_plist').show();$('.add-playlist').click();
+        }
+});
+    
+});
+
+});
+
+}
+
+function listas(elem = false) {
+$('.drop-lists:visible').remove();
+
+var currbtn = elem;
+
+msj_list(elem, function(){
+var cid = $('.add-playlist').attr('data-id');
+
+$('body').click(function(e) {
+var t = $(e.target);
+console.log(e.target);
+if(!t.closest( "ul" ).hasClass('drop-lists')) {
+$('.drop-lists').remove();
+}
+});
+
+$.ajax({
+							type:"POST",
+							url:authdomain+"/api/playlists",
+							data: {ajax: cid},
+							success:function(data){ 
+							$('.drop-lists .tmp p').remove();
+							if(data.length == 0) {$('.drop-lists .tmp').html('<p>No tienes listas aún! D:</p>');} else {
+							console.log(data);
+							
+							$.each(data, function(i, item) {
+							$('.drop-lists .tmp').append('<label class="checkbox checkbox-indent"><input data-id="'+item.id+'" type="checkbox" '+(item.listado == 1 ? 'checked' : '')+'><i class="chti ti ti-circle-check" aria-hidden="true"></i>'+item.nombre+(item.privacidad == 1 ? '' : ' <i class="ti ti-lock" aria-hidden="true"></i>')+'</label>');
+							});
+							
+							list_cap();
+							}
+							
+							 },
+							 error: function(xhr, status, error) {
+							console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+							},
+							 dataType: "json"
+			});
+			
+});
+
+
+
+
+
+}
+
+$('.likebtn').click(function() {
+	if(!es_usuario()) {
+	msj_registro($(this));
+	
+	} else {
+$.ajax({
+							type:"POST",
+							url:authdomain+"/api/playlists_like",
+							data: {list: $(this).attr('data-id')},
+							success:function(data){ 
+							
+							var r = data;
+							
+							if(r.status == 1) {
+							$('.likebtn').addClass('pulse');
+							} else {
+							msj_registro($('.likebtn'), 'Ya has dado like a esta lista.');
+							}
+							
+							
+							$('.likebtn span').text(r.total);
+							
+							},
+							 error: function(xhr, status, error) {
+							console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+							},
+							 dataType: "json"
+			});
+}
+});
+
+//Filtro
+function error_msj(msj = '') {
+return '<div id="perfil_privado"><p class="p-3">'+msj+'</p></div>';
+}
+
+var loader = '<div id="loader"><div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div></div>';
+var vacio_filtro = '<p class="vacio" style="display: inline-block;width: 100%;margin: 25px 15px;">No se encontró ningún resultado para tu filtro.</p>';
+var vacio_msj = '<p class="vacio" style="display: inline-block;width: 100%;margin: 25px 15px;">'+($('#perfil-usuario').attr('data-my-profile') == 'true' ? 'No tienes nada aquí aún.' : 'El usuario no tiene nada aquí aún.')+'</p>';
+$("#filtrar_guardado").on("click", function(e){
+e.preventDefault();
+$(this).addClass('activo');
+$("#loadmore").hide();
+$('#guardado_div').html(loader);
+
+pagina = 1;
+orden = $('#orden').val();
+orden_tipo = $('#tipo').val();
+filtro = $('#filtro').val();
+tag = $('.tag_nav').attr('data-tag');
+estado_fill = $('#estado').val();
+
+obtener_animes();
+
+});
+
+//Filtro tipos
+var loadmoreText = $("#loadmore").text();
+
+function filtros_guardado_usr() {
+	loadmoreText = $("#loadmore").text();
+$(".tag_nav li").click(function() {
+	$(".tag_nav").attr('data-tag', $(this).attr('data-val'));
+	$('.tag_nav li').removeClass('active');
+	$(this).addClass('active');
+	if($('.perfil_guardado').length) {
+	pagina = 1;
+	tag = $('.tag_nav').attr('data-tag');
+	$('#perfil_div').html(loader);
+	animes_perfil(tag);
+	} else {
+	$("#filtrar_guardado").click();
+	}
+
+});
+
+if($('.perfil_guardado').length) {
+$(".tag_nav li").first().click();
+} else {
+$(".tag_nav li").first().addClass('active');
+}
+
+//Cargar más
+$("#loadmore").on("click", function(e){
+	e.preventDefault();
+
+	$("#loadmore").addClass('activo');
+	$("#loadmore").text('Cargando...');
+	var tipo = $(this).attr('data-tipo');
+	if(tipo == "animes") {
+		obtener_animes();
+	} else if(tipo == "default") {
+		obtener_vistos();
+	} else if(tipo == "trailers") {
+		obtener_trailers();
+	} else if(tipo == "guardado") {
+		animes_perfil();
+	} else if(tipo == "recientes") {
+		pagina++;
+		guardados_inicio();
+	} else if(tipo == "amigos") {
+		amigos_perfil();
+	} else {
+		obtener_capitulos()
+	}
+});
+
+}
+filtros_guardado_usr();
+window.filtros_guardado_usr = filtros_guardado_usr;
+
+
+
+//Ordenar
+var originaltxt;
+function ordenar_guardado() {
+originaltxt = $("#ordenar_guardado").html();
+$("#ordenar_guardado").on("click", function(e){
+e.preventDefault();
+
+
+
+if($('#guardado_div.ordenar').length) {
+$(this).html(originaltxt);
+$(this).removeClass('btn-success');
+$(this).addClass('btn-danger');
+$('#guardado_div').removeClass('ordenar');
+//Guarda los cambios
+var orden_personalizado = [];
+$(".anime__item #del").each(function() {
+orden_personalizado.push($(this).attr('data-borrar'));
+});
+
+	$.ajax({
+			    type:"POST",
+			    url:authdomain+"/api/ordenar",
+			   data: {orden: orden_personalizado, api_token: api_token},
+			    success:function(data){ 
+				if(data == "token") { sesion_invalida();}
+			    console.log(data);
+				$.dialog({
+					title: 'Ordenado correctamente!',
+					content: 'Listo, ¡se ha guardado el orden de tus animes!',
+				});
+			     },
+			      error: function(xhr, status, error) {
+			      $.dialog({
+					title: 'ERROR',
+					content: 'Ocurrió un error al guardar el orden, por favor intenta de nuevo.',
+				});
+				console.log(xhr.responseText);if(xhr.responseText == "token") { sesion_invalida();}
+				},
+			     dataType: "json"
+			});
+			
+			
+} else {
+$('#guardado_div').html(loader);
+obtener_animes(function() {$('#guardado_div #loader').remove();},'all');
+
+$.dialog({
+    title: 'Ordenar mis animes',
+    content: 'Ahora puedes ordenar tus animes, solo selecciona y mueve de acuerdo a tu gusto. Al finalizar, presiona en guardar cambios.',
+});
+$(this).text('Guardar cambios');
+$(this).removeClass('btn-danger');
+$(this).addClass('btn-success');
+
+$('#guardado_div').addClass('ordenar');
+//Comienza a ordenar
+$('#guardado_div').sortable();
+}
+
+
+}); 
+}
+ordenar_guardado();
+
+
+//Borrar
+function msj_borrar() {
+$("strong[data-borrar]").on("click", function(e){
+    e.preventDefault();
+var tipo = $(this).attr('data-tipo');
+var thisDel = $(this);
+$.confirm({
+    title: 'Eliminar!',
+    icon: 'ti ti-trash',
+	type: 'red',
+    content: "¿Deseas eliminar este " + tipo + "?",
+    buttons: {
+        eliminar: function () {
+			//console.log(thisDel.attr('data-borrar'));
+			if(tipo == 'capitulo') {
+			borrar_marcador(thisDel.attr('data-borrar'));
+			} else {
+			borrar_guardado(thisDel.attr('data-borrar'));
+			}
+
+			thisDel.parent().parent().fadeOut(300, function(){ 
+			thisDel.remove();
+			});
+        },
+        cancelar: function () {
+            return true;
+        },
+
+    }
+});
+
+
+}); 
+}
+msj_borrar();
+//Auth
+if(leer_cookie('jkauth')) {
+$('li.noauth').hide();
+} else {
+$('li.auth').hide();
+}
+
+//Buscador 
+var timeout = null;
+
+
+function search_history() {
+	var query_history = cacheLocal.getItem("history");
+	if (query_history !== null) {
+		query_history = query_history == null ? [] : jparse(query_history).reverse();
+
+		if(query_history.length > 0) {
+			console.log("CARGA HISTORIAL");
+			$('.search_history').show();$('#search_results').hide();
+			//$('.qr_r').append('<li><a href="/'+data.animes[i]['slug']+'/"><div class="qr_thumb"><img src="'+data.animes[i]['thumbnail']+'"></div><h3>'+data.animes[i]['title']+'<b>'+data.anime_types[data.animes[i]['type']]+'</b></h3></a></li>');
+			$('.search_history').find('.history_list').html('');
+
+			for(var i=0;i<query_history.length;i++) {
+				if (i > 5) {break;}
+				$('.search_history').find('.history_list').append('<li><a href="'+query_history[i]['url']+'"><div class="qr_thumb"><img src="'+query_history[i]['image']+'"></div><h3>'+query_history[i]['title']+'</h3></a></li>');
+
+			}
+
+			$('.search_history').find('.history_list').append('<li class="qall"><a href="/busquedas"><strong>Ver historial completo</strong></a></li>');
+
+			console.log(query_history);
+		}
+	}
+}
+
+$(".form_search2 input").click(function() {
+var parentSearch = $(this).parent();
+
+if(parentSearch.find("#buscanime").val().length < 2) {
+
+//Busca el historial
+
+search_history();
+
+
+}
+});
+
+$(document).on('click', function(event) {
+  if (!$(event.target).closest('.header__right').length) {
+    $('.header .search_history').hide();
+    $('.notify-list').hide();
+    $('#authmenu').hide();
+  }
+});
+
+$(".form_search2 input").keyup(function() {
+var parentSearch = $(this).parent();
+clearTimeout(timeout);
+parentSearch.find('#qloader').show();
+parentSearch.find('.qr_r').remove();
+if($(this).parent().find("#buscanime").val().length > 2) {
+parentSearch.find("#btn_qsubmit").attr("disabled", true);
+parentSearch.find('.search_history').hide();
+parentSearch.find('#search_results').show();
+
+var query_history = cacheLocal.getItem("history");
+query_history = query_history == null ? [] : jparse(query_history);
+
+$(window).click(function() {
+parentSearch.find('#search_results').hide();
+});
+parentSearch.click(function(event){
+  event.stopPropagation();
+});
+    timeout = setTimeout(function() {
+        
+        $.ajax({
+				type:"POST",
+				url:$('#form_search_ajax').attr('data-ajax'),
+				data: {_token: token, q: parentSearch.find("#buscanime").val()},
+			    success:function(data){ 
+			    console.log('Busca:');console.log(data);
+			    parentSearch.find('#qloader').hide();
+			    //Carga resultados
+				$('ul.qr_r').remove();
+
+			    parentSearch.find('#search_results').append("<ul class='qr_r'></ul>");
+			    if(data.length == 0) {
+			    parentSearch.find('.qr_r').html("<p class='qr_nr'>No se encontraron resultados.</p>");
+			    } else {
+			    for(var i=0;i<data.length;i++) {
+
+			    parentSearch.find('.qr_r').append('<li class="rq"><a href="/'+data[i]['slug']+'/"><div class="qr_thumb"><img src="'+data[i]['thumbnail']+'"></div><h3>'+data[i]['title']+'<b>'+data[i]['type']+'</b></h3></a></li>');
+			    }
+			    parentSearch.find('.qr_r').append('<li class="qall"><a href="'+ $('.header__logo a').attr('href')+"/buscar/"+encodeURI(parentSearch.find("#buscanime").val())+'"><strong>Más resultados</strong></a></li>');
+			     
+			     
+			     $('#search_results li.rq a').click(function(e) {
+			     e.preventDefault();
+			     var h_item = {url: $(this).attr('href'),image: $(this).find('img').attr('src'),title: $(this).find('h3').html()};
+					 query_history.push(h_item);
+			     if(query_history.length > 35) {
+			     query_history.slice(-35);
+			     }
+			     
+			     cacheLocal.setItem('history', JSON.stringify(query_history));
+
+			     location.href = $(this).attr('href');
+			     });
+			
+				/*parentSearch.find('.qall').click(function() {
+				parentSearch.find("#btn_qsubmit").attr("disabled", false);
+				parentSearch.submit();
+				});*/
+				
+			    }
+			     },
+			     dataType: "json"
+			});
+			
+    }, 500);
+	
+} else {
+parentSearch.find('#search_results').hide();
+}
+			
+});
+
+
+$('.floatsearch').click(function(e) {
+	e.preventDefault();
+	$('.searchbg').toggle();
+	$('.searchbg .buscanime').focus();
+	search_history();
+});
+
+})(jQuery);
+
+
+$("[data-trigger]").on("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    var offcanvas_id =  $(this).attr('data-trigger');
+    $(offcanvas_id).toggleClass("show");
+    $('body').toggleClass("offcanvas-active");
+    $(".screen-overlay").toggleClass("show");
+}); 
+
+$(".btn-close, .screen-overlay").click(function(e){
+    $(".screen-overlay").removeClass("show");
+    $(".mobile-offcanvas").removeClass("show");
+    $("body").removeClass("offcanvas-active");
+}); 
+
+
+

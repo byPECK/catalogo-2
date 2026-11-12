@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "filas": [
+    {
+      "titulo": "Cortos de Blender",
+      "seccion": "peliculas",
+      "items": [
+        {
+          "id": "hd-caminandes-llama-drama",
+          "titulo": "Caminandes: Llama Drama",
+          "anio": "2013",
+          "poster": "https://studio.blender.org/files/public/thumbnail/fe/8c/fe8c9ad1bc842403f24f46375709ead8b5fb154c_m.webp",
+          "video": "https://studio.blender.org/download-source/files/fe/fe8c9ad1bc842403f24f46375709ead8b5fb154c/fe8c9ad1bc842403f24f46375709ead8b5fb154c.mp4",
+          "descripcion": "Koro, una llama muy obstinada, busca la forma de cruzar una carretera patagónica. Corto de animación sin diálogo.",
+          "fuente": "Blender Studio / Blender Institute",
+          "licencia": "CC BY 4.0"
+        },
+        {
+          "id": "hd-caminandes-gran-dillama",
+          "titulo": "Caminandes: Gran Dillama",
+          "anio": "2013",
+          "poster": "https://studio.blender.org/files/public/thumbnail/ff/0c/ff0cd0946c500c32da78c8f3101b02eb670df72c_m.webp",
+          "video": "https://studio.blender.org/download-source/files/ff/ff0cd0946c500c32da78c8f3101b02eb670df72c/ff0cd0946c500c32da78c8f3101b02eb670df72c.mp4",
+          "descripcion": "Una valla separa a Koro de una tentadora parcela de hierba. Corto de comedia visual sin diálogo.",
+          "fuente": "Blender Studio / Blender Institute",
+          "licencia": "CC BY 4.0"
+        },
+        {
+          "id": "hd-caminandes-llamigos",
+          "titulo": "Caminandes: Llamigos",
+          "anio": "2016",
+          "poster": "https://studio.blender.org/files/public/thumbnail/26/3f/263f328078fbebd508a0d3262f4fb4da5f16439f_m.webp",
+          "video": "https://studio.blender.org/download-source/files/26/263f328078fbebd508a0d3262f4fb4da5f16439f/263f328078fbebd508a0d3262f4fb4da5f16439f-1080p.mp4",
+          "descripcion": "En el invierno patagónico, Koro lucha por conseguir una baya y descubre que no está solo. Corto de animación sin diálogo.",
+          "fuente": "Blender Studio / Blender Institute",
+          "licencia": "CC BY 4.0"
+        },
+        {
+          "id": "hd-glass-half",
+          "titulo": "Glass Half",
+          "anio": "2015",
+          "poster": "https://studio.blender.org/files/public/thumbnail/c6/3d/c63ddc47dd56cf369557e969f15e2cb644aa421a_m.webp",
+          "video": "https://studio.blender.org/download-source/files/c6/c63ddc47dd56cf369557e969f15e2cb644aa421a/c63ddc47dd56cf369557e969f15e2cb644aa421a-1080p.mp4",
+          "descripcion": "Dos críticos aficionados discuten sobre las obras de una galería hasta encontrar un punto de acuerdo. Comedia visual con voces estilizadas.",
+          "fuente": "Blender Studio / Blender Institute",
+          "licencia": "CC BY 4.0"
+        }
+      ]
+    },
+    {
+      "titulo": "NASA en español",
+      "seccion": "series",
+      "items": [
+        {
+          "id": "hd-nasa-2023-0106-recientemente",
+          "titulo": "¡Bienvenida a casa, Orion!",
+          "anio": "2023",
+          "poster": "https://images-assets.nasa.gov/video/2023_0106_Recientemente/2023_0106_Recientemente~large.jpg",
+          "video": "https://images-assets.nasa.gov/video/2023_0106_Recientemente/2023_0106_Recientemente~medium.mp4",
+          "descripcion": "Cápsula informativa en español del archivo de NASA. Publicada el 2023-01-06. Material histórico de 2023; no son noticias actuales.",
+          "fuente": "NASA / Goddard Space Flight Center",
+          "licencia": "NASA Media Usage Guidelines"
+        },
+        {
+          "id": "hd-nasa-20230127recientemente",
+          "titulo": "En honor de nuestros héroes caídos",
+          "anio": "2023",
+          "poster": "https://images-assets.nasa.gov/video/20230127Recientemente/20230127Recientemente~large.jpg",
+          "video": "https://images-assets.nasa.gov/video/20230127Recientemente/20230127Recientemente~medium.mp4",
+          "descripcion": "Cápsula informativa en español del archivo de NASA. Publicada el 2023-01-27. Material histórico de 2023; no son noticias actuales.",
+          "fuente": "NASA / Goddard Space Flight Center",
+          "licencia": "NASA Media Usage Guidelines"
+        },
+        {
+          "id": "hd-nasa-20230224-recientemente",
+          "titulo": "Tripulación de vuelo lista",
+          "anio": "2023",
+          "poster": "https://images-assets.nasa.gov/video/20230224_Recientemente/20230224_Recientemente~large.jpg",
+          "video": "https://images-assets.nasa.gov/video/20230224_Recientemente/20230224_Recientemente~medium.mp4",
+          "descripcion": "Cápsula informativa en español del archivo de NASA. Publicada el 2023-02-24. Material histórico de 2023; no son noticias actuales.",
+          "fuente": "NASA / Goddard Space Flight Center",
+          "licencia": "NASA Media Usage Guidelines"
+        },
+        {
+          "id": "hd-nasa-20230317-recientemente",
+          "titulo": "El presidente solicita presupuesto para la NASA",
+          "anio": "2023",
+          "poster": "https://images-assets.nasa.gov/video/20230317_recientemente/20230317_recientemente~large.jpg",
+          "video": "https://images-assets.nasa.gov/video/20230317_recientemente/20230317_recientemente~medium.mp4",
+          "descripcion": "Cápsula informativa en español del archivo de NASA. Publicada el 2023-03-17. Material histórico de 2023; no son noticias actuales.",
+          "fuente": "NASA / Goddard Space Flight Center",
+          "licencia": "NASA Media Usage Guidelines"
+        },
+        {
+          "id": "hd-nasa-20230331-recientemente",
+          "titulo": "Astronautas de la NASA comparten su experiencia en la estación espacial",
+          "anio": "2023",
+          "poster": "https://images-assets.nasa.gov/video/20230331_Recientemente/20230331_Recientemente~large.jpg",
+          "video": "https://images-assets.nasa.gov/video/20230331_Recientemente/20230331_Recientemente~medium.mp4",
+          "descripcion": "Cápsula informativa en español del archivo de NASA. Publicada el 2023-03-31. Material histórico de 2023; no son noticias actuales.",
+          "fuente": "NASA / Goddard Space Flight Center",
+          "licencia": "NASA Media Usage Guidelines"
+        },
+        {
+          "id": "hd-nasa-20230512-recientemente",
+          "titulo": "Una nave cambia de puerto de atraque en la estación espacial",
+          "anio": "2023",
+          "poster": "https://images-assets.nasa.gov/video/20230512_Recientemente/20230512_Recientemente~large.jpg",
+          "video": "https://images-assets.nasa.gov/video/20230512_Recientemente/20230512_Recientemente~medium.mp4",
+          "descripcion": "Cápsula informativa en español del archivo de NASA. Publicada el 2023-05-12. Material histórico de 2023; no son noticias actuales.",
+          "fuente": "NASA / Goddard Space Flight Center",
+          "licencia": "NASA Media Usage Guidelines"
+        },
+        {
+          "id": "hd-nasa-20230519-recientemente",
+          "titulo": "La tripulación de la misión Artemis II visita Washington D.C.",
+          "anio": "2023",
+          "poster": "https://images-assets.nasa.gov/video/20230519_Recientemente/20230519_Recientemente~large.jpg",
+          "video": "https://images-assets.nasa.gov/video/20230519_Recientemente/20230519_Recientemente~medium.mp4",
+          "descripcion": "Cápsula informativa en español del archivo de NASA. Publicada el 2023-05-19. Material histórico de 2023; no son noticias actuales.",
+          "fuente": "NASA / Goddard Space Flight Center",
+          "licencia": "NASA Media Usage Guidelines"
+        },
+        {
+          "id": "hd-nasa-20230609-recientemente",
+          "titulo": "Otra caminata para renovar el suministro de electricidad en la estación espacial",
+          "anio": "2023",
+          "poster": "https://images-assets.nasa.gov/video/20230609_Recientemente/20230609_Recientemente~large.jpg",
+          "video": "https://images-assets.nasa.gov/video/20230609_Recientemente/20230609_Recientemente~medium.mp4",
+          "descripcion": "Cápsula informativa en español del archivo de NASA. Publicada el 2023-06-09. Material histórico de 2023; no son noticias actuales.",
+          "fuente": "NASA / Goddard Space Flight Center",
+          "licencia": "NASA Media Usage Guidelines"
+        }
+      ]
+    },
+    {
+      "titulo": "Anime",
+      "seccion": "anime",
+      "items": []
+    }
+  ]
+}
